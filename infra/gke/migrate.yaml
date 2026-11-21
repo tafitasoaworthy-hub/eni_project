@@ -10,11 +10,24 @@ spec:
       labels:
         app: migrations
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
       restartPolicy: Never
       containers:
       - name: migrate
+        #checkov:skip=CKV_K8S_14:CI replaces this placeholder with the full commit SHA image tag
+        #checkov:skip=CKV_K8S_43:CI assigns the image a unique full-SHA tag; Checkov scans this template before image resolution
         image: BACKEND_IMAGE
         command: [python, manage.py, migrate, --noinput]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         envFrom:
         - configMapRef:
             name: eni-runtime

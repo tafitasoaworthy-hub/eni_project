@@ -254,9 +254,6 @@ spec:
         - podSelector:
             matchLabels:
               app: backend
-        - podSelector:
-            matchLabels:
-              app: migrations
       ports:
         - protocol: TCP
           port: 8000
