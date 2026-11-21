@@ -1,4 +1,4 @@
-name: Déployer ENI sur GKE
+name: Sécurité et déploiement ENI
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  security-events: write
 
 concurrency:
   group: eni-production
@@ -18,20 +19,91 @@ env:
   NAMESPACE: eni
 
 jobs:
-  deploy:
+  secrets-sast-iac:
+    name: Secrets, code et Kubernetes
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Détecter les secrets avec GitGuardian
+        uses: GitGuardian/ggshield/actions/secret@v1.55.0
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+      - name: Analyser le code avec Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: p/default
+
+      - name: Vérifier les manifestes avec Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra/gke
+          framework: kubernetes,dockerfile
+          quiet: true
+          soft_fail: false
+
+  build-scan:
+    name: Images et vulnérabilités
+    needs: secrets-sast-iac
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    outputs:
+      image_tag: ${{ steps.tag.outputs.value }}
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
 
-      - name: Construire les images du commit
+      - id: tag
+        name: Préparer le tag immuable
+        run: echo "value=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Construire backend et frontend
         run: |
           docker build -f infra/gke/backend.Dockerfile -t "$REGISTRY/backend:$GITHUB_SHA" .
           docker build -f infra/gke/frontend.Dockerfile -t "$REGISTRY/frontend:$GITHUB_SHA" .
 
-      - name: Se connecter à Google Cloud
+      - name: Scanner backend avec Trivy
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ env.REGISTRY }}/backend:${{ github.sha }}
+          format: sarif
+          output: trivy-backend.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Scanner frontend avec Trivy
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ env.REGISTRY }}/frontend:${{ github.sha }}
+          format: sarif
+          output: trivy-frontend.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Publier les alertes Trivy backend
+        if: always() && hashFiles('trivy-backend.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-backend.sarif
+          category: trivy-backend
+
+      - name: Publier les alertes Trivy frontend
+        if: always() && hashFiles('trivy-frontend.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-frontend.sarif
+          category: trivy-frontend
+
+      - name: Authentifier Cloud Build et Artifact Registry
         id: auth
         uses: google-github-actions/auth@v3
         with:
@@ -39,13 +111,29 @@ jobs:
           service_account: eni-github-deployer@eni-universite-b9124bd9.iam.gserviceaccount.com
           token_format: access_token
 
-      - name: Publier les images
+      - name: Publier les images validées
         env:
           REGISTRY_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
           printf '%s' "$REGISTRY_TOKEN" | docker login -u oauth2accesstoken --password-stdin "$REGISTRY_HOST"
           docker push "$REGISTRY/backend:$GITHUB_SHA"
           docker push "$REGISTRY/frontend:$GITHUB_SHA"
+
+  deploy:
+    name: Migrer et déployer
+    needs: build-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Authentifier Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/691608346445/locations/global/workloadIdentityPools/eni-github/providers/github-actions
+          service_account: eni-github-deployer@eni-universite-b9124bd9.iam.gserviceaccount.com
 
       - name: Connecter kubectl au cluster
         uses: google-github-actions/get-gke-credentials@v3
@@ -54,7 +142,7 @@ jobs:
           cluster_name: eni
           location: africa-south1
 
-      - name: Migrer PostgreSQL et déployer
+      - name: Migrer PostgreSQL et déployer les images
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -80,4 +168,15 @@ jobs:
           kubectl -n "$NAMESPACE" rollout status deployment/backend --timeout=600s
           kubectl -n "$NAMESPACE" set image deployment/frontend "nginx=$frontend_image"
           kubectl -n "$NAMESPACE" rollout status deployment/frontend --timeout=600s
-          curl --fail --silent --show-error --retry 5 --retry-all-errors --max-time 15 https://eni-fianarantsoa.com/login --output /dev/null
+
+  zap-dast:
+    name: Test dynamique OWASP ZAP
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tester le portail public avec ZAP
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: https://eni-fianarantsoa.com
+          fail_action: true
+          allow_issue_writing: false

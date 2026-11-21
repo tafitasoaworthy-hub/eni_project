@@ -34,9 +34,25 @@ La base GKE démarre vide. Pour réutiliser les données WSL, prévoyez un expor
 
 ## Déploiement automatique
 
-Le workflow GitHub Actions `deploy-gke.yml` se déclenche à chaque push sur `main`. Il construit les images du commit, les publie dans Artifact Registry, exécute les migrations PostgreSQL et vérifie la mise en ligne. Les déploiements sont exécutés l'un après l'autre. Si un commit plus récent est déjà sur `main` au moment de déployer, le workflow laisse ce commit prendre le relais.
+Le workflow GitHub Actions `deploy-gke.yml` se déclenche à chaque push sur `main`. Il exige d'abord les scans GitGuardian, Semgrep et Checkov, construit ensuite les images et bloque leur publication si Trivy détecte une vulnérabilité haute ou critique corrigible. Après les migrations PostgreSQL et le déploiement, OWASP ZAP lance le scan dynamique du portail. Les déploiements sont exécutés l'un après l'autre. Si un commit plus récent est déjà sur `main` au moment de déployer, le workflow laisse ce commit prendre le relais.
 
 GitHub s'authentifie auprès de Google Cloud avec Workload Identity Federation. Le compte `eni-github-deployer` peut publier dans `eni-images`, créer des tâches de migration dans l'espace Kubernetes `eni` et mettre à jour les déploiements `backend` et `frontend`. La configuration du domaine et les changements d'infrastructure se gèrent avec les commandes de ce guide.
+
+Ajoutez la clé de scan GitGuardian dans les paramètres GitHub du dépôt, sous **Settings → Secrets and variables → Actions**, avec le nom `GITGUARDIAN_API_KEY`. Le pipeline échoue volontairement si cette clé manque ou si le scanner détecte un secret.
+
+### Surveillance Wazuh
+
+`infra/wazuh/agent-daemonset.yaml` déploie un agent par nœud. Créez d'abord un Secret contenant l'adresse du manager Wazuh, l'adresse du serveur d'enrôlement et le mot de passe d'enrôlement :
+
+```sh
+kubectl -n wazuh-agent create secret generic wazuh-agent-config \
+  --from-literal=manager-address=ADRESSE_MANAGER \
+  --from-literal=registration-address=ADRESSE_ENROLEMENT \
+  --from-literal=enrollment-password='MOT_DE_PASSE'
+kubectl apply -k infra/wazuh
+```
+
+Ce DaemonSet requiert les permissions d'accès aux journaux et à l'hôte recommandées par Wazuh. GKE Autopilot peut refuser ces accès privilégiés. Dans ce cas, installez l'agent sur un cluster GKE Standard ou utilisez le déploiement Wazuh Sidecar correspondant à la politique de sécurité du cluster. Semgrep, Trivy, Checkov et ZAP s'exécutent dans GitHub Actions et ne sont pas installés dans les pods applicatifs.
 
 ## Domaine public
 
