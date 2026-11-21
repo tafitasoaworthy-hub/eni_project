@@ -10,7 +10,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env if present
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.getenv(
+
+def secret_value(name, default=""):
+    """Read a Kubernetes-mounted secret file, falling back to the environment."""
+    value = os.getenv(name)
+    if value is not None:
+        return value
+    secret_file = Path("/run/secrets") / name
+    return secret_file.read_text().strip() if secret_file.is_file() else default
+
+SECRET_KEY = secret_value(
     "DJANGO_SECRET_KEY",
     "dev-insecure-key-change-me-in-production-0123456789abcdef",
 )
@@ -102,7 +111,7 @@ else:
             "ENGINE": "django.db.backends.postgresql",
             "NAME": os.getenv("POSTGRES_DB", "gestion_univ"),
             "USER": os.getenv("POSTGRES_USER", "eni"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "eni2024"),
+            "PASSWORD": secret_value("POSTGRES_PASSWORD", "eni2024"),
             "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
             "PORT": os.getenv("POSTGRES_PORT", "5432"),
             "CONN_MAX_AGE": int(os.getenv("POSTGRES_CONN_MAX_AGE", "60")),
@@ -159,7 +168,7 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = os.getenv("DJANGO_SSL_REDIRECT", "False").lower() == "true"
 
 # --- OpenAI configuration ---
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_API_KEY = secret_value("OPENAI_API_KEY", "").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_ENABLED = bool(OPENAI_API_KEY)
 

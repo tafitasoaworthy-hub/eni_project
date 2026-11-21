@@ -1,15 +1,11 @@
-#checkov:skip=CKV_K8S_14:CI replaces the image placeholder with the full commit SHA tag
-#checkov:skip=CKV_K8S_43:Checkov scans the template before CI resolves the unique commit-SHA image
-#checkov:skip=CKV_K8S_35:Django and PostgreSQL currently consume these Kubernetes Secret values through environment variables
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: eni-migrate-IMAGE_TAG
   namespace: eni
   annotations:
-    checkov.io/skip1: CKV_K8S_35=Migration job consumes Kubernetes Secret values as environment variables required by the Django settings.
-    checkov.io/skip2: CKV_K8S_14=CI replaces the image placeholder with a versioned image tag derived from the commit SHA.
-    checkov.io/skip3: CKV_K8S_43=CI replaces the image placeholder with a versioned image tag derived from the commit SHA.
+    checkov.io/skip1: CKV_K8S_14=CI replaces the image placeholder with a versioned image tag derived from the commit SHA.
+    checkov.io/skip2: CKV_K8S_43=CI replaces the image placeholder with a versioned image tag derived from the commit SHA.
 spec:
   backoffLimit: 2
   ttlSecondsAfterFinished: 86400
@@ -35,22 +31,36 @@ spec:
           capabilities:
             drop:
               - ALL
-        volumeMounts:
-          - name: tmp
-            mountPath: /tmp
         envFrom:
         - configMapRef:
             name: eni-runtime
-        - secretRef:
-            name: eni-runtime
-        - secretRef:
-            name: eni-postgres
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
+          - name: app-secrets
+            mountPath: /run/secrets
+            readOnly: true
         resources:
           requests: {cpu: 250m, memory: 512Mi}
           limits: {cpu: 1, memory: 1Gi}
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: app-secrets
+          projected:
+            sources:
+            - secret:
+                name: eni-runtime
+                items:
+                - key: DJANGO_SECRET_KEY
+                  path: DJANGO_SECRET_KEY
+                - key: OPENAI_API_KEY
+                  path: OPENAI_API_KEY
+            - secret:
+                name: eni-postgres
+                items:
+                - key: POSTGRES_PASSWORD
+                  path: POSTGRES_PASSWORD
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

@@ -35,6 +35,7 @@ spec:
           runAsNonRoot: true
           runAsUser: 10001
           allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
           seccompProfile:
             type: RuntimeDefault
           capabilities:
@@ -42,10 +43,13 @@ spec:
               - ALL
         image: postgres:17-bookworm@sha256:051f7b7b3abdd564d5d1bd1e8c4b9c1b6e77087d1dd22020ede611c096a272e0
         imagePullPolicy: Always
-        envFrom:
-        - secretRef:
-            name: eni-postgres
         env:
+        - name: POSTGRES_DB
+          value: gestion_univ
+        - name: POSTGRES_USER
+          value: eni
+        - name: POSTGRES_PASSWORD_FILE
+          value: /run/secrets/eni-postgres/POSTGRES_PASSWORD
         - name: PGDATA
           value: /var/lib/postgresql/data/pgdata
         ports:
@@ -60,9 +64,25 @@ spec:
           periodSeconds: 10
         resources:
           requests: {cpu: 250m, memory: 512Mi}
+          limits: {cpu: 1, memory: 1Gi}
         volumeMounts:
         - name: data
           mountPath: /var/lib/postgresql/data
+        - name: db-secret
+          mountPath: /run/secrets/eni-postgres
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+        - name: postgres-run
+          mountPath: /var/run/postgresql
+      volumes:
+      - name: db-secret
+        secret:
+          secretName: eni-postgres
+      - name: tmp
+        emptyDir: {}
+      - name: postgres-run
+        emptyDir: {}
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -125,6 +145,9 @@ kind: Deployment
 metadata:
   name: backend
   namespace: eni
+  annotations:
+    checkov.io/skip1: CKV_K8S_14=CI replaces BACKEND_IMAGE with a versioned commit-SHA image tag before deployment.
+    checkov.io/skip2: CKV_K8S_43=CI replaces BACKEND_IMAGE with a versioned commit-SHA image tag before deployment.
 spec:
   replicas: 1
   strategy:
@@ -156,10 +179,6 @@ spec:
         envFrom:
         - configMapRef:
             name: eni-runtime
-        - secretRef:
-            name: eni-runtime
-        - secretRef:
-            name: eni-postgres
         ports:
         - containerPort: 8000
         readinessProbe:
@@ -186,12 +205,30 @@ spec:
           mountPath: /app/media
         - name: tmp
           mountPath: /tmp
+        - name: app-secrets
+          mountPath: /run/secrets
+          readOnly: true
       volumes:
       - name: media
         persistentVolumeClaim:
           claimName: eni-media
       - name: tmp
         emptyDir: {}
+      - name: app-secrets
+        projected:
+          sources:
+          - secret:
+              name: eni-runtime
+              items:
+              - key: DJANGO_SECRET_KEY
+                path: DJANGO_SECRET_KEY
+              - key: OPENAI_API_KEY
+                path: OPENAI_API_KEY
+          - secret:
+              name: eni-postgres
+              items:
+              - key: POSTGRES_PASSWORD
+                path: POSTGRES_PASSWORD
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -261,6 +298,9 @@ kind: Deployment
 metadata:
   name: frontend
   namespace: eni
+  annotations:
+    checkov.io/skip1: CKV_K8S_14=CI replaces FRONTEND_IMAGE with a versioned commit-SHA image tag before deployment.
+    checkov.io/skip2: CKV_K8S_43=CI replaces FRONTEND_IMAGE with a versioned commit-SHA image tag before deployment.
 spec:
   replicas: 1
   selector:
@@ -273,8 +313,9 @@ spec:
     spec:
       automountServiceAccountToken: false
       securityContext:
+        fsGroup: 10001
         runAsNonRoot: true
-        runAsUser: 101
+        runAsUser: 10001
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -284,6 +325,7 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
+          runAsUser: 10001
           capabilities:
             drop: [ALL]
         ports:
@@ -301,6 +343,20 @@ spec:
         resources:
           requests: {cpu: 250m, memory: 128Mi}
           limits: {cpu: 1, memory: 512Mi}
+        volumeMounts:
+        - name: nginx-tmp
+          mountPath: /tmp
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /var/run
+      volumes:
+      - name: nginx-tmp
+        emptyDir: {}
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
+        emptyDir: {}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
