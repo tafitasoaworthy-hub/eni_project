@@ -6,6 +6,10 @@ kind: Job
 metadata:
   name: eni-migrate-IMAGE_TAG
   namespace: eni
+  annotations:
+    checkov.io/skip1: CKV_K8S_35=Migration job consumes Kubernetes Secret values as environment variables required by the Django settings.
+    checkov.io/skip2: CKV_K8S_14=CI replaces the image placeholder with a versioned image tag derived from the commit SHA.
+    checkov.io/skip3: CKV_K8S_43=CI replaces the image placeholder with a versioned image tag derived from the commit SHA.
 spec:
   backoffLimit: 2
   ttlSecondsAfterFinished: 86400

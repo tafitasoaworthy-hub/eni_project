@@ -26,14 +26,22 @@ spec:
       labels:
         app: postgres
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 10001
       containers:
       - name: postgres
         securityContext:
+          runAsNonRoot: true
+          runAsUser: 10001
           allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
           capabilities:
             drop:
               - ALL
-        image: postgres:17
+        image: postgres:17-bookworm@sha256:051f7b7b3abdd564d5d1bd1e8c4b9c1b6e77087d1dd22020ede611c096a272e0
+        imagePullPolicy: Always
         envFrom:
         - secretRef:
             name: eni-postgres
@@ -45,6 +53,11 @@ spec:
         readinessProbe:
           exec:
             command: [pg_isready, -h, 127.0.0.1, -U, eni, -d, gestion_univ]
+        livenessProbe:
+          exec:
+            command: [pg_isready, -h, 127.0.0.1, -U, eni, -d, gestion_univ]
+          initialDelaySeconds: 30
+          periodSeconds: 10
         resources:
           requests: {cpu: 250m, memory: 512Mi}
         volumeMounts:
@@ -126,9 +139,20 @@ spec:
     spec:
       securityContext:
         fsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      automountServiceAccountToken: false
       containers:
       - name: django
         image: BACKEND_IMAGE
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
         envFrom:
         - configMapRef:
             name: eni-runtime
@@ -145,15 +169,29 @@ spec:
             httpHeaders:
             - name: Host
               value: localhost
+        livenessProbe:
+          httpGet:
+            path: /healthz/
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: localhost
+          initialDelaySeconds: 30
+          periodSeconds: 10
         resources:
           requests: {cpu: 250m, memory: 512Mi}
+          limits: {cpu: 1, memory: 1Gi}
         volumeMounts:
         - name: media
           mountPath: /app/media
+        - name: tmp
+          mountPath: /tmp
       volumes:
       - name: media
         persistentVolumeClaim:
           claimName: eni-media
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -233,17 +271,36 @@ spec:
       labels:
         app: frontend
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: nginx
         image: FRONTEND_IMAGE
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
         ports:
         - containerPort: 8080
         readinessProbe:
           httpGet:
             path: /healthz
             port: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
         resources:
           requests: {cpu: 250m, memory: 128Mi}
+          limits: {cpu: 1, memory: 512Mi}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
