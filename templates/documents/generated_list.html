@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block page_title %}Documents générés{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <span class="text-muted small">{{ total }} document(s)</span>
+  <a href="?archived={% if show_archived %}0{% else %}1{% endif %}" class="btn btn-light btn-sm"><i class="fa-solid fa-box-archive me-1"></i>{% if show_archived %}Actifs{% else %}Archives{% endif %}</a>
+</div>
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead class="table-light"><tr><th>Titre</th><th>Étudiant</th><th>Type</th><th>Date</th><th>Statut</th><th class="text-end">Actions</th></tr></thead>
+  <tbody>
+    {% for d in page_obj %}
+    <tr>
+      <td><a href="{{ d.get_absolute_url }}" class="text-decoration-none fw-semibold">{{ d.titre }}</a>
+        {% if d.genere_par_ia %}<span class="badge bg-info ms-1">IA</span>{% endif %}</td>
+      <td class="small">{{ d.student.full_name }}</td>
+      <td class="small">{{ d.get_type_document_display }}</td>
+      <td class="small">{{ d.created_at|date:"d/m/Y" }}</td>
+      <td>{% if d.valide %}<span class="badge bg-success">Validé</span>{% else %}<span class="badge bg-warning">En attente</span>{% endif %}</td>
+      <td class="text-end"><a href="{{ d.get_absolute_url }}" class="btn btn-sm btn-light"><i class="fa-solid fa-eye"></i></a>
+        <a href="{% url 'documents:generated_pdf' d.pk %}" target="_blank" class="btn btn-sm btn-light"><i class="fa-solid fa-file-pdf"></i></a></td>
+    </tr>
+    {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">Aucun document.</td></tr>{% endfor %}
+  </tbody>
+</table></div></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

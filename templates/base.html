@@ -1,0 +1,113 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ UNIVERSITY_SHORT }} — Gestion Universitaire{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/logo.jpg' %}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <img src="{% static 'img/logo.jpg' %}" alt="logo">
+      <span>{{ UNIVERSITY_SHORT }}<br><small style="font-weight:400;font-size:.72rem;opacity:.7">Gestion Universitaire</small></span>
+    </div>
+
+    <a class="nav-link {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:home' %}"><i class="fa-solid fa-gauge-high"></i> Tableau de bord</a>
+
+    {% if user.is_etudiant or user.is_enseignant %}
+      <a class="nav-link" href="{% url 'schedules:mine' %}"><i class="fa-regular fa-calendar"></i> Mon emploi du temps</a>
+    {% endif %}
+
+    {% if user.is_staff_member %}
+      <div class="nav-section">Scolarité</div>
+      <a class="nav-link {% if request.resolver_match.url_name == 'student_list' %}active{% endif %}" href="{% url 'core:student_list' %}"><i class="fa-solid fa-user-graduate"></i> Étudiants</a>
+      <a class="nav-link {% if request.resolver_match.url_name == 'teacher_list' %}active{% endif %}" href="{% url 'core:teacher_list' %}"><i class="fa-solid fa-chalkboard-user"></i> Enseignants</a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'enrollments' %}active{% endif %}" href="{% url 'enrollments:list' %}"><i class="fa-solid fa-file-signature"></i> Inscriptions</a>
+      <a class="nav-link {% if request.resolver_match.namespace == 'schedules' %}active{% endif %}" href="{% url 'schedules:list' %}"><i class="fa-regular fa-calendar-days"></i> Emplois du temps</a>
+
+      <div class="nav-section">Organisation</div>
+      <a class="nav-link {% if request.resolver_match.url_name == 'departement_list' %}active{% endif %}" href="{% url 'core:departement_list' %}"><i class="fa-solid fa-sitemap"></i> Départements</a>
+      <a class="nav-link {% if request.resolver_match.url_name == 'filiere_list' %}active{% endif %}" href="{% url 'core:filiere_list' %}"><i class="fa-solid fa-diagram-project"></i> Filières</a>
+      <a class="nav-link {% if request.resolver_match.url_name == 'matiere_list' %}active{% endif %}" href="{% url 'core:matiere_list' %}"><i class="fa-solid fa-book"></i> Matières</a>
+      {% if user.is_admin %}
+      <a class="nav-link {% if request.resolver_match.url_name == 'niveau_list' %}active{% endif %}" href="{% url 'core:niveau_list' %}"><i class="fa-solid fa-layer-group"></i> Niveaux</a>
+      <a class="nav-link {% if request.resolver_match.url_name == 'annee_list' %}active{% endif %}" href="{% url 'core:annee_list' %}"><i class="fa-regular fa-calendar-check"></i> Années univ.</a>
+      {% endif %}
+
+      <div class="nav-section">Documents</div>
+      <a class="nav-link {% if request.resolver_match.url_name == 'request_list' %}active{% endif %}" href="{% url 'documents:request_list' %}"><i class="fa-solid fa-inbox"></i> Demandes</a>
+      <a class="nav-link {% if request.resolver_match.url_name == 'generated_list' %}active{% endif %}" href="{% url 'documents:generated_list' %}"><i class="fa-solid fa-file-pdf"></i> Documents générés</a>
+      <a class="nav-link {% if request.resolver_match.url_name == 'template_list' %}active{% endif %}" href="{% url 'documents:template_list' %}"><i class="fa-regular fa-file-lines"></i> Modèles</a>
+    {% endif %}
+
+    <div class="nav-section">Intelligence artificielle</div>
+    <a class="nav-link {% if request.resolver_match.url_name == 'chat' or request.resolver_match.url_name == 'chat_session' %}active{% endif %}" href="{% url 'aiassistant:chat' %}"><i class="fa-solid fa-robot"></i> Chatbot</a>
+    <a class="nav-link {% if request.resolver_match.url_name == 'search' %}active{% endif %}" href="{% url 'aiassistant:search' %}"><i class="fa-solid fa-magnifying-glass-chart"></i> Recherche IA</a>
+    {% if user.is_staff_member %}
+    <a class="nav-link {% if request.resolver_match.url_name == 'admin_assistant' %}active{% endif %}" href="{% url 'aiassistant:admin_assistant' %}"><i class="fa-solid fa-pen-fancy"></i> Assistant admin.</a>
+    <a class="nav-link {% if request.resolver_match.url_name == 'analysis' %}active{% endif %}" href="{% url 'aiassistant:analysis' %}"><i class="fa-solid fa-chart-line"></i> Analyse IA</a>
+    {% endif %}
+
+    {% if user.is_admin %}
+      <div class="nav-section">Administration</div>
+      <a class="nav-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}" href="{% url 'accounts:user_list' %}"><i class="fa-solid fa-users-gear"></i> Utilisateurs</a>
+      <a class="nav-link {% if request.resolver_match.url_name == 'audit_log' %}active{% endif %}" href="{% url 'accounts:audit_log' %}"><i class="fa-solid fa-clipboard-list"></i> Journal</a>
+    {% endif %}
+    <div style="height:30px"></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-light d-md-none" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="fa-solid fa-bars"></i></button>
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        {% if annee_courante %}<span class="badge badge-soft"><i class="fa-regular fa-calendar"></i> {{ annee_courante }}</span>{% endif %}
+        <span class="badge {% if OPENAI_ENABLED %}bg-success{% else %}bg-secondary{% endif %}" title="État de l'IA">
+          <i class="fa-solid fa-robot"></i> IA {% if OPENAI_ENABLED %}OpenAI{% else %}locale{% endif %}</span>
+        <div class="dropdown">
+          <a class="d-flex align-items-center gap-2 text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" href="#" style="color:#2c3340">
+            <span class="avatar-circle" style="width:34px;height:34px;font-size:.8rem">{{ user.first_name|first|default:user.username|first|upper }}</span>
+            <span class="d-none d-sm-inline">{{ user.get_full_name|default:user.username }}</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li class="dropdown-item-text small text-muted">{{ user.get_role_display }}</li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="fa-regular fa-user me-2"></i>Mon profil</a></li>
+            <li><a class="dropdown-item" href="{% url 'accounts:password_change' %}"><i class="fa-solid fa-key me-2"></i>Mot de passe</a></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}"><i class="fa-solid fa-right-from-bracket me-2"></i>Déconnexion</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+  {% block fullpage %}{% endblock %}
+{% endif %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

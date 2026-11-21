@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block page_title %}Modèles de documents{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <span class="text-muted small">Modèles réutilisables avec variables</span>
+  <a href="{% url 'documents:template_create' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus me-1"></i>Nouveau modèle</a>
+</div>
+<div class="row g-3">
+  {% for t in templates %}
+  <div class="col-md-6"><div class="card p-4 h-100">
+    <div class="d-flex justify-content-between"><h6 class="fw-bold">{{ t.nom }}</h6>
+      <span class="badge badge-soft">{{ t.get_type_document_display }}</span></div>
+    <p class="small text-muted mb-3" style="white-space:pre-wrap">{{ t.corps|truncatewords:30 }}</p>
+    <a href="{% url 'documents:template_edit' t.pk %}" class="btn btn-sm btn-outline-primary align-self-start"><i class="fa-solid fa-pen me-1"></i>Modifier</a>
+  </div></div>
+  {% empty %}<div class="col-12 text-center text-muted py-4">Aucun modèle. Créez-en un pour accélérer la génération.</div>{% endfor %}
+</div>
+{% endblock %}

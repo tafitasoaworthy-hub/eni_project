@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block page_title %}Mon espace{% endblock %}
+{% block content %}
+<div class="card p-4 mb-4" style="background:linear-gradient(135deg,#1d6fb8,#3a9bd2);color:#fff">
+  <h4 class="mb-1">Bienvenue, {{ user.get_full_name|default:user.username }}</h4>
+  <p class="mb-0 opacity-75">Espace enseignant — {{ UNIVERSITY_NAME }}</p>
+</div>
+{% if profile %}
+<div class="row g-4">
+  <div class="col-md-5"><div class="card p-4">
+    <h6 class="mb-3"><i class="fa-solid fa-id-card me-2 text-primary"></i>Mon profil</h6>
+    <table class="table table-sm mb-0">
+      <tr><th class="text-muted">Matricule</th><td>{{ profile.matricule }}</td></tr>
+      <tr><th class="text-muted">Spécialité</th><td>{{ profile.specialite|default:"—" }}</td></tr>
+      <tr><th class="text-muted">Département</th><td>{{ profile.departement.nom|default:"—" }}</td></tr>
+    </table>
+    <a href="{% url 'schedules:mine' %}" class="btn btn-outline-primary btn-sm mt-3 w-100"><i class="fa-regular fa-calendar me-1"></i>Mon emploi du temps</a>
+  </div></div>
+  <div class="col-md-7"><div class="card p-4">
+    <h6 class="mb-3"><i class="fa-solid fa-book me-2 text-primary"></i>Mes matières ({{ matieres|length }})</h6>
+    <div class="d-flex flex-wrap gap-2">
+      {% for m in matieres %}<span class="badge bg-light text-dark border p-2">{{ m.nom }} <small class="text-muted">{{ m.niveau.code }}</small></span>
+      {% empty %}<span class="text-muted">Aucune matière affectée.</span>{% endfor %}
+    </div>
+  </div></div>
+</div>
+{% else %}
+<div class="alert alert-warning">Votre profil enseignant n'est pas encore lié à ce compte. Contactez l'administration.</div>
+{% endif %}
+{% endblock %}

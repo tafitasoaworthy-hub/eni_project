@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block page_title %}Mon espace{% endblock %}
+{% block content %}
+<div class="card p-4 mb-4" style="background:linear-gradient(135deg,#8b1a1a,#b23a3a);color:#fff">
+  <h4 class="mb-1">Bienvenue, {{ user.get_full_name|default:user.username }}</h4>
+  <p class="mb-0 opacity-75">Espace étudiant — {{ UNIVERSITY_NAME }}</p>
+</div>
+{% if profile %}
+<div class="row g-4">
+  <div class="col-md-6"><div class="card p-4">
+    <h6 class="mb-3"><i class="fa-solid fa-id-card me-2 text-primary"></i>Ma situation</h6>
+    <table class="table table-sm mb-0">
+      <tr><th class="text-muted">Matricule</th><td>{{ profile.matricule }}</td></tr>
+      <tr><th class="text-muted">Filière</th><td>{{ profile.filiere.nom|default:"—" }}</td></tr>
+      <tr><th class="text-muted">Niveau</th><td>{{ profile.niveau.code|default:"—" }}</td></tr>
+      <tr><th class="text-muted">Statut</th><td>{{ profile.get_statut_display }}</td></tr>
+    </table>
+  </div></div>
+  <div class="col-md-6"><div class="card p-4">
+    <h6 class="mb-3"><i class="fa-solid fa-bolt me-2 text-primary"></i>Accès rapides</h6>
+    <div class="d-grid gap-2">
+      <a href="{% url 'schedules:mine' %}" class="btn btn-outline-primary"><i class="fa-regular fa-calendar me-1"></i>Mon emploi du temps</a>
+      <a href="{% url 'aiassistant:chat' %}" class="btn btn-outline-primary"><i class="fa-solid fa-robot me-1"></i>Poser une question à l'assistant</a>
+      <a href="{% url 'aiassistant:search' %}" class="btn btn-outline-primary"><i class="fa-solid fa-magnifying-glass me-1"></i>Recherche intelligente</a>
+    </div>
+  </div></div>
+</div>
+{% else %}
+<div class="alert alert-warning">Votre profil étudiant n'est pas encore lié à ce compte. Contactez la scolarité.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Connexion — {{ UNIVERSITY_SHORT }}{% endblock %}
+{% block fullpage %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="text-center mb-4">
+      <img src="{% static 'img/logo.jpg' %}" class="logo mb-3" alt="logo">
+      <h4 class="mb-1" style="color:var(--primary)">{{ UNIVERSITY_NAME }}</h4>
+      <p class="text-muted small mb-0">Plateforme de Gestion Universitaire</p>
+    </div>
+
+    {% if messages %}{% for m in messages %}
+      <div class="alert alert-{{ m.tags }} py-2 small">{{ m }}</div>
+    {% endfor %}{% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 small">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Nom d'utilisateur</label>
+        {{ form.username }}
+      </div>
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Mot de passe</label>
+        {{ form.password }}
+      </div>
+      <button class="btn btn-primary w-100 mb-2" type="submit"><i class="fa-solid fa-right-to-bracket me-1"></i> Se connecter</button>
+      <div class="text-center">
+        <a href="{% url 'accounts:password_reset' %}" class="small">Mot de passe oublié ?</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

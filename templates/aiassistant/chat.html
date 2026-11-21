@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block page_title %}Assistant universitaire{% endblock %}
+{% block content %}
+<div class="chat-wrap">
+  <div class="chat-sessions">
+    <form method="post" action="{% url 'aiassistant:chat_new' %}" class="mb-2">{% csrf_token %}
+      <button class="btn btn-primary btn-sm w-100"><i class="fa-solid fa-plus me-1"></i>Nouvelle conversation</button>
+    </form>
+    <div class="card p-2">
+      {% for s in sessions %}
+        <a href="{% url 'aiassistant:chat_session' s.pk %}" class="d-block px-2 py-2 rounded text-decoration-none small {% if s.pk == session.pk %}bg-light fw-semibold{% endif %}" style="color:#334">
+          <i class="fa-regular fa-message me-1 text-muted"></i>{{ s.titre|truncatechars:26 }}
+        </a>
+      {% empty %}<div class="text-muted small p-2">Aucune conversation.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="chat-main">
+    <div class="chat-box" id="chatBox">
+      {% if not messages_list %}
+        <div class="text-center text-muted py-5">
+          <i class="fa-solid fa-robot fa-2x mb-3"></i>
+          <p class="mb-1">Bonjour ! Je suis l'assistant de la plateforme.</p>
+          <p class="small">Posez-moi une question sur les inscriptions, les filières, les documents ou les emplois du temps.</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center mt-3">
+            <button class="btn btn-sm btn-outline-secondary suggestion">Quels documents pour une inscription ?</button>
+            <button class="btn btn-sm btn-outline-secondary suggestion">Comment obtenir une attestation ?</button>
+            <button class="btn btn-sm btn-outline-secondary suggestion">Combien d'étudiants au total ?</button>
+          </div>
+        </div>
+      {% endif %}
+      {% for m in messages_list %}
+        <div class="msg {{ m.role }}">{{ m.content }}
+          <div class="meta">{{ m.created_at|time:"H:i" }}{% if m.via_openai %} · OpenAI{% elif m.role == 'assistant' %} · local{% endif %}</div></div>
+      {% endfor %}
+    </div>
+    <form id="chatForm" class="mt-2 d-flex gap-2" data-url="{% url 'aiassistant:chat_send' session.pk %}">
+      {% csrf_token %}
+      <input type="text" id="chatInput" class="form-control" placeholder="Écrivez votre message..." autocomplete="off" required>
+      <button class="btn btn-primary" type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const box = document.getElementById('chatBox');
+const form = document.getElementById('chatForm');
+const input = document.getElementById('chatInput');
+const csrf = form.querySelector('[name=csrfmiddlewaretoken]').value;
+function scroll(){ box.scrollTop = box.scrollHeight; }
+function addMsg(role, text, meta){
+  const d = document.createElement('div');
+  d.className = 'msg ' + role;
+  d.textContent = text;
+  if(meta){ const m=document.createElement('div'); m.className='meta'; m.textContent=meta; d.appendChild(m); }
+  box.appendChild(d); scroll();
+  return d;
+}
+scroll();
+document.querySelectorAll('.suggestion').forEach(b => b.addEventListener('click', () => { input.value = b.textContent; form.requestSubmit(); }));
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = input.value.trim(); if(!text) return;
+  addMsg('user', text);
+  input.value=''; input.disabled=true;
+  const typing = addMsg('assistant', '…', '');
+  try{
+    const res = await fetch(form.dataset.url, {method:'POST', headers:{'X-CSRFToken':csrf,'Content-Type':'application/x-www-form-urlencoded'}, body:'message='+encodeURIComponent(text)});
+    const data = await res.json();
+    typing.firstChild.textContent = data.answer;
+    const meta = typing.querySelector('.meta'); if(meta) meta.textContent = data.created + (data.via_openai ? ' · OpenAI' : ' · local');
+  }catch(err){ typing.firstChild.textContent = "Erreur de communication. Réessayez."; }
+  input.disabled=false; input.focus(); scroll();
+});
+</script>
+{% endblock %}

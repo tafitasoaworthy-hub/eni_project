@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block page_title %}Tableau de bord{% endblock %}
+{% block content %}
+<form method="get" class="mb-3 d-flex justify-content-end">
+  <div class="input-group" style="max-width:280px">
+    <span class="input-group-text bg-white small">Année</span>
+    <select name="annee" class="form-select" onchange="this.form.submit()">
+      <option value="">Toutes</option>
+      {% for a in annees %}<option value="{{ a.pk }}" {% if annee_id == a.pk|stringformat:'s' %}selected{% endif %}>{{ a.libelle }}</option>{% endfor %}
+    </select>
+  </div>
+</form>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2"><div class="stat-card bg-grad-1"><i class="fa-solid fa-user-graduate icon"></i><div class="value">{{ stats.nb_etudiants }}</div><div class="label">Étudiants</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="stat-card bg-grad-2"><i class="fa-solid fa-chalkboard-user icon"></i><div class="value">{{ stats.nb_enseignants }}</div><div class="label">Enseignants</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="stat-card bg-grad-3"><i class="fa-solid fa-sitemap icon"></i><div class="value">{{ stats.nb_departements }}</div><div class="label">Départements</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="stat-card bg-grad-4"><i class="fa-solid fa-diagram-project icon"></i><div class="value">{{ stats.nb_filieres }}</div><div class="label">Filières</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="stat-card bg-grad-5"><i class="fa-solid fa-file-signature icon"></i><div class="value">{{ stats.nb_inscriptions }}</div><div class="label">Inscriptions</div></div></div>
+  <div class="col-6 col-md-4 col-xl-2"><div class="stat-card bg-grad-6"><i class="fa-solid fa-book icon"></i><div class="value">{{ stats.nb_matieres }}</div><div class="label">Matières</div></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card p-3"><div class="d-flex justify-content-between"><span class="text-muted small">Inscriptions validées</span><i class="fa-solid fa-circle-check text-success"></i></div><div class="h4 mb-0">{{ stats.nb_inscriptions_validees }}</div></div></div>
+  <div class="col-md-3"><div class="card p-3"><div class="d-flex justify-content-between"><span class="text-muted small">Inscriptions en attente</span><i class="fa-solid fa-clock text-warning"></i></div><div class="h4 mb-0">{{ stats.nb_inscriptions_attente }}</div></div></div>
+  <div class="col-md-3"><div class="card p-3"><div class="d-flex justify-content-between"><span class="text-muted small">Demandes de documents</span><i class="fa-solid fa-inbox text-primary"></i></div><div class="h4 mb-0">{{ stats.nb_demandes }}</div></div></div>
+  <div class="col-md-3"><div class="card p-3"><div class="d-flex justify-content-between"><span class="text-muted small">Documents générés</span><i class="fa-solid fa-file-pdf text-danger"></i></div><div class="h4 mb-0">{{ stats.nb_documents }}</div></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7"><div class="card p-4"><h6 class="mb-3">Étudiants par filière</h6><canvas id="chFiliere" height="130"></canvas></div></div>
+  <div class="col-lg-5"><div class="card p-4"><h6 class="mb-3">Répartition par niveau</h6><canvas id="chNiveau" height="160"></canvas></div></div>
+  <div class="col-lg-7"><div class="card p-4"><h6 class="mb-3">Inscriptions par année universitaire</h6><canvas id="chAnnee" height="130"></canvas></div></div>
+  <div class="col-lg-5"><div class="card p-4"><h6 class="mb-3">Demandes de documents par statut</h6><canvas id="chDoc" height="160"></canvas></div></div>
+</div>
+
+<div class="card p-4 mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="mb-0"><i class="fa-solid fa-chart-line me-2 text-primary"></i>Synthèse IA des statistiques</h6>
+    <a href="{% url 'aiassistant:analysis' %}" class="btn btn-sm btn-outline-primary">Générer une analyse</a>
+  </div>
+  <p class="small text-muted mb-0">Utilisez l'analyse intelligente pour obtenir une synthèse en langage naturel des effectifs et des tendances.</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script>
+const D = {{ charts_json|safe }};
+const palette = ['#8b1a1a','#1d6fb8','#1f8a5b','#c9a227','#8a5ad2','#b23a3a','#3a9bd2','#3cb37c','#e08a00','#6d6d6d'];
+new Chart(chFiliere, {type:'bar', data:{labels:D.filiere_labels, datasets:[{label:'Étudiants', data:D.filiere_values, backgroundColor:'#8b1a1a', borderRadius:4}]}, options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
+new Chart(chNiveau, {type:'doughnut', data:{labels:D.niveau_labels, datasets:[{data:D.niveau_values, backgroundColor:palette}]}, options:{plugins:{legend:{position:'bottom'}}}});
+new Chart(chAnnee, {type:'line', data:{labels:D.annee_labels, datasets:[{label:'Inscriptions', data:D.annee_values, borderColor:'#1d6fb8', backgroundColor:'rgba(29,111,184,.15)', fill:true, tension:.3}]}, options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
+new Chart(chDoc, {type:'pie', data:{labels:D.doc_labels, datasets:[{data:D.doc_values, backgroundColor:['#c9a227','#1f8a5b','#b23a3a']}]}, options:{plugins:{legend:{position:'bottom'}}}});
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block page_title %}Demande de document{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card p-4">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div><h5 class="mb-1">{{ req.get_type_document_display }}</h5>
+      <div class="text-muted small">Pour {{ req.student.full_name }} ({{ req.student.matricule }})</div></div>
+    <span class="badge bg-{% if req.statut == 'VALIDEE' %}success{% elif req.statut == 'REFUSEE' %}danger{% else %}warning{% endif %} fs-6">{{ req.get_statut_display }}</span>
+  </div>
+  <table class="table table-sm">
+    <tr><th class="text-muted" style="width:35%">Motif</th><td>{{ req.motif|default:"—" }}</td></tr>
+    <tr><th class="text-muted">Demandé par</th><td>{{ req.demande_par.get_full_name|default:req.demande_par.username|default:"—" }}</td></tr>
+    <tr><th class="text-muted">Date</th><td>{{ req.created_at|date:"d/m/Y H:i" }}</td></tr>
+    {% if req.traite_par %}<tr><th class="text-muted">Traité par</th><td>{{ req.traite_par.get_full_name|default:req.traite_par.username }}</td></tr>{% endif %}
+  </table>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if req.statut != 'VALIDEE' %}<a href="{% url 'documents:request_set_status' req.pk 'VALIDEE' %}" class="btn btn-success btn-sm"><i class="fa-solid fa-check me-1"></i>Valider</a>{% endif %}
+    {% if req.statut != 'REFUSEE' %}<a href="{% url 'documents:request_set_status' req.pk 'REFUSEE' %}" class="btn btn-danger btn-sm"><i class="fa-solid fa-xmark me-1"></i>Refuser</a>{% endif %}
+    <a href="{% url 'documents:generate' req.student.pk %}?type={{ req.type_document }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-file-circle-plus me-1"></i>Générer le document</a>
+  </div>
+</div></div></div>
+{% endblock %}

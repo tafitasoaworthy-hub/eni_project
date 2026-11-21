@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block page_title %}Assistant administratif IA{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5"><div class="card p-4">
+    <h6 class="mb-3"><i class="fa-solid fa-pen-fancy me-2 text-primary"></i>Rédaction assistée</h6>
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3"><label class="form-label small fw-semibold">Type de tâche</label>
+        <select name="task" class="form-select">
+          {% for v, l in tasks %}<option value="{{ v }}" {% if task == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select></div>
+      <div class="mb-3"><label class="form-label small fw-semibold">Éléments / texte à traiter</label>
+        <textarea name="instructions" class="form-control" rows="9" placeholder="Décrivez l'objet du courrier, collez le texte à reformuler ou à résumer...">{{ instructions }}</textarea></div>
+      <button class="btn btn-primary w-100"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>Générer</button>
+    </form>
+  </div></div>
+  <div class="col-lg-7"><div class="card p-4 h-100">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="fa-solid fa-file-lines me-2 text-primary"></i>Résultat</h6>
+      {% if result %}<span class="badge {% if via_openai %}bg-info{% else %}bg-secondary{% endif %}">{% if via_openai %}OpenAI{% else %}Moteur local{% endif %}</span>{% endif %}
+    </div>
+    {% if result %}
+      <div class="border rounded p-3" style="white-space:pre-wrap;line-height:1.6;background:#fff" id="result">{{ result }}</div>
+      <button class="btn btn-light btn-sm mt-2" onclick="navigator.clipboard.writeText(document.getElementById('result').innerText)"><i class="fa-regular fa-copy me-1"></i>Copier</button>
+      <div class="alert alert-warning small mt-3 mb-0"><i class="fa-solid fa-triangle-exclamation me-1"></i>Document à vérifier et valider par un responsable avant diffusion.</div>
+    {% else %}
+      <div class="text-muted text-center py-5"><i class="fa-regular fa-pen-to-square fa-2x mb-2"></i><p>Le texte généré apparaîtra ici.</p></div>
+    {% endif %}
+  </div></div>
+</div>
+{% endblock %}

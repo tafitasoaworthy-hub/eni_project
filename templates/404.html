@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block page_title %}Page introuvable{% endblock %}
+{% block content %}
+<div class="card p-5 text-center">
+  <i class="fa-solid fa-compass fa-3x text-muted mb-3"></i>
+  <h4>404 — Page introuvable</h4>
+  <a href="{% url 'dashboard:home' %}" class="btn btn-primary mx-auto" style="max-width:220px">Tableau de bord</a>
+</div>
+{% endblock %}
+{% block fullpage %}<div class="login-wrap"><div class="login-card text-center"><h5>404</h5><a href="{% url 'accounts:login' %}" class="btn btn-primary w-100">Connexion</a></div></div>{% endblock %}

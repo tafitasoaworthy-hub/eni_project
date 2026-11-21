@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block page_title %}Générer un document{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <span class="text-muted small">Pour <strong>{{ student.full_name }}</strong> ({{ student.matricule }}) —</span>
+  {% for v, l in types %}
+    <a href="?type={{ v }}" class="badge {% if type_doc == v %}bg-primary{% else %}bg-light text-dark border{% endif %} text-decoration-none">{{ l }}</a>
+  {% endfor %}
+</div>
+
+{% if ai_used is False and request.POST.action == 'ai_draft' %}
+  <div class="alert alert-secondary small"><i class="fa-solid fa-robot me-1"></i>Brouillon généré par le moteur local (OpenAI indisponible ou non configuré). À vérifier et valider par un responsable.</div>
+{% elif ai_used %}
+  <div class="alert alert-info small"><i class="fa-solid fa-robot me-1"></i>Brouillon généré par OpenAI. Document à vérifier et valider par un responsable avant délivrance.</div>
+{% endif %}
+
+<div class="card p-4">
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="was_ai" value="{% if ai_used %}1{% else %}0{% endif %}">
+    <div class="mb-3"><label class="form-label small fw-semibold">{{ form.titre.label }}</label>{{ form.titre }}</div>
+    <div class="mb-3"><label class="form-label small fw-semibold">{{ form.contenu.label }}</label>{{ form.contenu }}
+      {% if form.contenu.errors %}<div class="text-danger small">{{ form.contenu.errors|striptags }}</div>{% endif %}</div>
+    <div class="form-check mb-3">{{ form.valide }}<label class="form-check-label small">{{ form.valide.label }}</label></div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-primary" name="action" value="save"><i class="fa-solid fa-floppy-disk me-1"></i>Enregistrer le document</button>
+      <button class="btn btn-outline-secondary" name="action" value="ai_draft"><i class="fa-solid fa-robot me-1"></i>Proposer un brouillon IA</button>
+      <a href="{{ student.get_absolute_url }}" class="btn btn-light">Retour</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

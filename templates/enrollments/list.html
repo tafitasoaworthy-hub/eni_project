@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block page_title %}Inscriptions{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <span class="text-muted small">{{ total }} inscription(s)</span>
+  <a href="{% url 'enrollments:create' %}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus me-1"></i>Nouvelle inscription</a>
+</div>
+<form class="card p-3 mb-3" method="get">
+  <div class="row g-2">
+    <div class="col-md-3"><input name="q" value="{{ q }}" class="form-control" placeholder="Étudiant..."></div>
+    <div class="col-md-2"><select name="annee" class="form-select"><option value="">Année</option>
+      {% for a in annees %}<option value="{{ a.pk }}" {% if annee == a.pk|stringformat:'s' %}selected{% endif %}>{{ a.libelle }}</option>{% endfor %}</select></div>
+    <div class="col-md-3"><select name="filiere" class="form-select"><option value="">Filière</option>
+      {% for f in filieres %}<option value="{{ f.pk }}" {% if filiere == f.pk|stringformat:'s' %}selected{% endif %}>{{ f.nom }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><select name="niveau" class="form-select"><option value="">Niveau</option>
+      {% for n in niveaux %}<option value="{{ n.pk }}" {% if niveau == n.pk|stringformat:'s' %}selected{% endif %}>{{ n.code }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><button class="btn btn-outline-primary w-100">Filtrer</button></div>
+  </div>
+</form>
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead class="table-light"><tr><th>Étudiant</th><th>Année</th><th>Filière</th><th>Niv.</th><th>Type</th><th>Statut</th><th class="text-end">Actions</th></tr></thead>
+  <tbody>
+    {% for e in page_obj %}
+    <tr>
+      <td><a href="{{ e.student.get_absolute_url }}" class="text-decoration-none fw-semibold">{{ e.student.full_name }}</a><br><small class="text-muted">{{ e.student.matricule }}</small></td>
+      <td>{{ e.annee.libelle }}</td><td class="small">{{ e.filiere.nom }}</td><td><span class="badge badge-soft">{{ e.niveau.code }}</span></td>
+      <td class="small">{{ e.get_type_inscription_display }}</td>
+      <td><span class="badge bg-{% if e.statut == 'VALIDEE' %}success{% elif e.statut == 'REFUSEE' %}danger{% else %}warning{% endif %}">{{ e.get_statut_display }}</span></td>
+      <td class="text-end"><a href="{{ e.get_absolute_url }}" class="btn btn-sm btn-light"><i class="fa-solid fa-eye"></i></a>
+        <a href="{% url 'enrollments:edit' e.pk %}" class="btn btn-sm btn-light"><i class="fa-solid fa-pen"></i></a></td>
+    </tr>
+    {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">Aucune inscription.</td></tr>{% endfor %}
+  </tbody>
+</table></div></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

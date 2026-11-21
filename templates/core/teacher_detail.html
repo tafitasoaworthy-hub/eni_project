@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block page_title %}Profil enseignant{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card p-4 text-center">
+      <div class="avatar-circle avatar-lg mx-auto mb-3">{{ teacher.prenom|first|upper }}{{ teacher.nom|first|upper }}</div>
+      <h5 class="mb-0">{{ teacher.full_name }}</h5>
+      <div class="text-muted small">{{ teacher.matricule }}</div>
+      <span class="badge badge-soft mt-2">{{ teacher.get_grade_display }}</span>
+      <hr>
+      <div class="text-start small">
+        <p class="mb-1"><i class="fa-solid fa-microscope me-2 text-muted"></i>{{ teacher.specialite|default:"—" }}</p>
+        <p class="mb-1"><i class="fa-solid fa-sitemap me-2 text-muted"></i>{{ teacher.departement.nom|default:"—" }}</p>
+        <p class="mb-1"><i class="fa-solid fa-envelope me-2 text-muted"></i>{{ teacher.email|default:"—" }}</p>
+        <p class="mb-0"><i class="fa-solid fa-phone me-2 text-muted"></i>{{ teacher.telephone|default:"—" }}</p>
+      </div>
+      <a href="{% url 'core:teacher_edit' teacher.pk %}" class="btn btn-outline-primary btn-sm mt-3 w-100"><i class="fa-solid fa-pen me-1"></i>Modifier</a>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card p-4 mb-4">
+      <h6 class="mb-3"><i class="fa-solid fa-book me-2 text-primary"></i>Matières enseignées</h6>
+      <div class="d-flex flex-wrap gap-2">
+        {% for m in matieres %}<a href="{{ m.get_absolute_url }}" class="badge bg-light text-dark border text-decoration-none p-2">{{ m.nom }} <small class="text-muted">({{ m.niveau.code }})</small></a>
+        {% empty %}<span class="text-muted">Aucune matière affectée.</span>{% endfor %}
+      </div>
+      <hr>
+      <h6 class="mb-2"><i class="fa-solid fa-diagram-project me-2 text-primary"></i>Filières</h6>
+      <div class="d-flex flex-wrap gap-2">
+        {% for f in teacher.filieres.all %}<span class="badge badge-soft">{{ f.nom }}</span>{% empty %}<span class="text-muted">—</span>{% endfor %}
+      </div>
+    </div>
+    <div class="card p-4">
+      <h6 class="mb-3"><i class="fa-regular fa-calendar me-2 text-primary"></i>Emploi du temps</h6>
+      <div class="table-responsive"><table class="table table-sm mb-0">
+        <thead class="table-light"><tr><th>Jour</th><th>Horaire</th><th>Matière</th><th>Groupe</th><th>Salle</th></tr></thead>
+        <tbody>
+          {% for s in seances %}<tr><td>{{ s.get_jour_display }}</td><td>{{ s.heure_debut|time:"H:i" }}-{{ s.heure_fin|time:"H:i" }}</td>
+            <td class="small">{{ s.matiere.nom }}</td><td class="small">{{ s.filiere.code }}/{{ s.niveau.code }}</td><td>{{ s.salle }}</td></tr>
+          {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">Aucune séance programmée.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

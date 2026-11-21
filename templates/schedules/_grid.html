@@ -1,0 +1,19 @@
+{% load schedule_extras %}
+<div class="timetable">
+  {% for jour_num, jour_nom in jours %}
+  <div class="tt-col">
+    <h6>{{ jour_nom }}</h6>
+    {% for s in grid|dictkey:jour_num %}
+      <div class="tt-slot {% if s.conflicts %}conflict{% endif %}">
+        <div class="fw-semibold">{{ s.heure_debut|time:"H:i" }}–{{ s.heure_fin|time:"H:i" }}</div>
+        <div>{{ s.matiere.nom }}</div>
+        <div class="text-muted" style="font-size:.72rem">{{ s.get_type_seance_display }} · {{ s.filiere.code }}/{{ s.niveau.code }}</div>
+        <div class="text-muted" style="font-size:.72rem">{% if s.enseignant %}{{ s.enseignant.full_name }}{% endif %}{% if s.salle %} · {{ s.salle }}{% endif %}</div>
+        <a href="{% url 'schedules:detail' s.pk %}" class="stretched-link"></a>
+      </div>
+    {% empty %}
+      <div class="text-center text-muted small py-2">—</div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>

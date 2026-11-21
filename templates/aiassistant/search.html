@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block page_title %}Recherche intelligente{% endblock %}
+{% block content %}
+<div class="card p-4 mb-3">
+  <form method="get" class="d-flex gap-2">
+    <input name="q" value="{{ query }}" class="form-control form-control-lg" placeholder="Posez votre question en langage naturel...">
+    <button class="btn btn-primary px-4"><i class="fa-solid fa-magnifying-glass"></i></button>
+  </form>
+  <div class="mt-2 d-flex flex-wrap gap-2">
+    <a href="?q=Combien d'étudiants sont inscrits au total ?" class="badge bg-light text-dark border text-decoration-none">Combien d'étudiants au total ?</a>
+    <a href="?q=Quels documents sont nécessaires pour une inscription ?" class="badge bg-light text-dark border text-decoration-none">Documents pour s'inscrire ?</a>
+    <a href="?q=Combien d'enseignants au total ?" class="badge bg-light text-dark border text-decoration-none">Combien d'enseignants ?</a>
+  </div>
+</div>
+{% if query %}
+<div class="card p-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="mb-0"><i class="fa-solid fa-reply me-2 text-primary"></i>Réponse</h6>
+    <span class="badge {% if via_openai %}bg-info{% else %}bg-secondary{% endif %}">{% if via_openai %}OpenAI{% else %}Moteur local{% endif %}</span>
+  </div>
+  <p class="small text-muted">Question : « {{ query }} »</p>
+  <div class="border rounded p-3" style="white-space:pre-wrap;line-height:1.7;background:#fff">{{ result }}</div>
+  <div class="form-text mt-2"><i class="fa-solid fa-shield-halved me-1"></i>La recherche n'expose que des informations agrégées autorisées, sans données personnelles d'autrui.</div>
+</div>
+{% endif %}
+{% endblock %}

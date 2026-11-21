@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block page_title %}Inscription{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-8">
+<div class="card p-4">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div><h5 class="mb-1">{{ e.student.full_name }}</h5><div class="text-muted small">{{ e.student.matricule }}</div></div>
+    <span class="badge bg-{% if e.statut == 'VALIDEE' %}success{% elif e.statut == 'REFUSEE' %}danger{% else %}warning{% endif %} fs-6">{{ e.get_statut_display }}</span>
+  </div>
+  <table class="table table-sm">
+    <tr><th class="text-muted" style="width:40%">Année universitaire</th><td>{{ e.annee.libelle }}</td></tr>
+    <tr><th class="text-muted">Filière</th><td>{{ e.filiere.nom }}</td></tr>
+    <tr><th class="text-muted">Niveau</th><td>{{ e.niveau.code }} — {{ e.niveau.libelle }}</td></tr>
+    <tr><th class="text-muted">Type</th><td>{{ e.get_type_inscription_display }}</td></tr>
+    <tr><th class="text-muted">Date</th><td>{{ e.date_inscription|date:"d/m/Y" }}</td></tr>
+    <tr><th class="text-muted">Créée par</th><td>{{ e.cree_par.get_full_name|default:e.cree_par.username|default:"—" }}</td></tr>
+    {% if e.observation %}<tr><th class="text-muted">Observation</th><td>{{ e.observation }}</td></tr>{% endif %}
+  </table>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if e.statut != 'VALIDEE' %}<a href="{% url 'enrollments:set_status' e.pk 'VALIDEE' %}" class="btn btn-success btn-sm"><i class="fa-solid fa-check me-1"></i>Valider</a>{% endif %}
+    {% if e.statut != 'REFUSEE' %}<a href="{% url 'enrollments:set_status' e.pk 'REFUSEE' %}" class="btn btn-danger btn-sm"><i class="fa-solid fa-xmark me-1"></i>Refuser</a>{% endif %}
+    {% if e.statut != 'EN_ATTENTE' %}<a href="{% url 'enrollments:set_status' e.pk 'EN_ATTENTE' %}" class="btn btn-warning btn-sm">Mettre en attente</a>{% endif %}
+    <a href="{% url 'enrollments:edit' e.pk %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-pen me-1"></i>Modifier</a>
+    <a href="{% url 'documents:generate' e.student.pk %}?type=FICHE" class="btn btn-light btn-sm"><i class="fa-solid fa-file-lines me-1"></i>Fiche d'inscription</a>
+  </div>
+</div>
+</div></div>
+{% endblock %}

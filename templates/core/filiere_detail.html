@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block page_title %}{{ filiere.nom }}{% endblock %}
+{% block content %}
+<div class="card p-4 mb-4">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <h4 class="mb-1">{{ filiere.nom }} <span class="badge badge-soft">{{ filiere.code }}</span></h4>
+      <div class="small text-muted">Département : {{ filiere.departement.nom }}{% if filiere.parcours %} · Parcours : {{ filiere.parcours }}{% endif %}</div>
+      <p class="small mt-2 mb-0">{{ filiere.description|default:"" }}</p>
+    </div>
+    {% if user.is_admin %}<a href="{% url 'core:filiere_edit' filiere.pk %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-pen me-1"></i>Modifier</a>{% endif %}
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-md-8"><div class="card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="fa-solid fa-user-graduate me-2 text-primary"></i>Étudiants ({{ etudiants.count }})</h6>
+      <form method="get"><select name="niveau" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">Tous niveaux</option>
+        {% for n in niveaux %}<option value="{{ n.pk }}" {% if niveau == n.pk|stringformat:'s' %}selected{% endif %}>{{ n.code }}</option>{% endfor %}
+      </select></form>
+    </div>
+    <div class="table-responsive"><table class="table table-sm table-hover mb-0">
+      <thead class="table-light"><tr><th>Matricule</th><th>Nom</th><th>Niveau</th></tr></thead>
+      <tbody>
+        {% for s in etudiants %}<tr><td class="small">{{ s.matricule }}</td>
+          <td><a href="{{ s.get_absolute_url }}" class="text-decoration-none">{{ s.full_name }}</a></td>
+          <td><span class="badge badge-soft">{{ s.niveau.code|default:"—" }}</span></td></tr>
+        {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">Aucun étudiant.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div></div>
+  <div class="col-md-4"><div class="card p-4">
+    <h6 class="mb-3"><i class="fa-solid fa-book me-2 text-primary"></i>Matières</h6>
+    <ul class="list-group list-group-flush">
+      {% for m in matieres %}<li class="list-group-item px-0 d-flex justify-content-between">
+        <a href="{{ m.get_absolute_url }}" class="text-decoration-none small">{{ m.nom }}</a>
+        <span class="badge badge-soft">{{ m.niveau.code }}</span></li>
+      {% empty %}<li class="list-group-item px-0 text-muted">Aucune matière.</li>{% endfor %}
+    </ul>
+  </div></div>
+</div>
+{% endblock %}

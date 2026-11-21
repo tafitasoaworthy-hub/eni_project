@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block page_title %}{{ titre }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-9"><div class="card p-4">
+  <form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger py-2 small">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row g-3">
+      {% for field in form %}
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">{{ field.label }}</label>{{ field }}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="alert alert-info small mt-3 mb-0"><i class="fa-solid fa-circle-info me-1"></i>Les conflits d'horaire (salle, enseignant ou groupe) sont détectés automatiquement après enregistrement.</div>
+    <div class="mt-3"><button class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i>Enregistrer</button>
+      <a href="{% url 'schedules:list' %}" class="btn btn-light">Annuler</a></div>
+  </form>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block page_title %}Mon profil{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card p-4 text-center">
+      {% if user.photo %}<img src="{{ user.photo.url }}" class="avatar-circle avatar-lg mx-auto mb-3" style="object-fit:cover">
+      {% else %}<div class="avatar-circle avatar-lg mx-auto mb-3">{{ user.first_name|first|default:user.username|first|upper }}</div>{% endif %}
+      <h5 class="mb-0">{{ user.get_full_name|default:user.username }}</h5>
+      <div class="text-muted small">{{ user.get_role_display }}</div>
+      <hr>
+      <div class="text-start small">
+        <p class="mb-1"><i class="fa-solid fa-user me-2 text-muted"></i>{{ user.username }}</p>
+        <p class="mb-1"><i class="fa-solid fa-envelope me-2 text-muted"></i>{{ user.email|default:"—" }}</p>
+        <p class="mb-0"><i class="fa-solid fa-phone me-2 text-muted"></i>{{ user.phone|default:"—" }}</p>
+      </div>
+      <a href="{% url 'accounts:password_change' %}" class="btn btn-outline-primary btn-sm mt-3 w-100"><i class="fa-solid fa-key me-1"></i>Changer le mot de passe</a>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card p-4">
+      <h6 class="mb-3">Modifier mes informations</h6>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          {% for field in form %}
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}<div class="text-danger small">{{ field.errors|striptags }}</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        <button class="btn btn-primary mt-3"><i class="fa-solid fa-floppy-disk me-1"></i>Enregistrer</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

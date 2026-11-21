@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block page_title %}Séance{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card p-4">
+  <h5 class="mb-3">{{ s.matiere.nom }}</h5>
+  <table class="table table-sm">
+    <tr><th class="text-muted" style="width:40%">Jour</th><td>{{ s.get_jour_display }}</td></tr>
+    <tr><th class="text-muted">Horaire</th><td>{{ s.heure_debut|time:"H:i" }} – {{ s.heure_fin|time:"H:i" }}</td></tr>
+    <tr><th class="text-muted">Type</th><td>{{ s.get_type_seance_display }}</td></tr>
+    <tr><th class="text-muted">Filière / Niveau</th><td>{{ s.filiere.nom }} — {{ s.niveau.code }}</td></tr>
+    <tr><th class="text-muted">Enseignant</th><td>{{ s.enseignant.full_name|default:"—" }}</td></tr>
+    <tr><th class="text-muted">Salle</th><td>{{ s.salle|default:"—" }}</td></tr>
+    <tr><th class="text-muted">Année</th><td>{{ s.annee.libelle }}</td></tr>
+  </table>
+  {% if conflicts %}
+    <div class="alert alert-danger"><strong><i class="fa-solid fa-triangle-exclamation me-1"></i>Conflits détectés :</strong>
+      <ul class="mb-0 mt-1 small">
+        {% for type, other in conflicts %}<li>Conflit de <strong>{{ type }}</strong> avec « {{ other.matiere.nom }} » ({{ other.heure_debut|time:"H:i" }}–{{ other.heure_fin|time:"H:i" }})</li>{% endfor %}
+      </ul>
+    </div>
+  {% else %}<div class="alert alert-success small mb-3"><i class="fa-solid fa-check me-1"></i>Aucun conflit d'horaire.</div>{% endif %}
+  <div><a href="{% url 'schedules:edit' s.pk %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-pen me-1"></i>Modifier</a>
+    <a href="{% url 'schedules:delete' s.pk %}" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-trash me-1"></i>Supprimer</a>
+    <a href="{% url 'schedules:list' %}" class="btn btn-light btn-sm">Retour</a></div>
+</div></div></div>
+{% endblock %}

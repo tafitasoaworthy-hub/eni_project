@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block page_title %}{{ titre }}{% endblock %}
+{% block content %}
+{% if total %}
+  {% include "schedules/_grid.html" %}
+{% else %}
+  <div class="card p-5 text-center text-muted">
+    <i class="fa-regular fa-calendar-xmark fa-2x mb-3"></i>
+    <p class="mb-0">Aucune séance programmée pour le moment.</p>
+  </div>
+{% endif %}
+{% endblock %}

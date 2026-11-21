@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block page_title %}Profil étudiant{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card p-4 text-center">
+      {% if student.photo %}<img src="{{ student.photo.url }}" class="avatar-circle avatar-lg mx-auto mb-3" style="object-fit:cover">
+      {% else %}<div class="avatar-circle avatar-lg mx-auto mb-3">{{ student.prenom|first|upper }}{{ student.nom|first|upper }}</div>{% endif %}
+      <h5 class="mb-0">{{ student.full_name }}</h5>
+      <div class="text-muted small">{{ student.matricule }}</div>
+      <span class="badge bg-{% if student.statut == 'ACTIF' %}success{% else %}secondary{% endif %} mt-2">{{ student.get_statut_display }}</span>
+      <hr>
+      <div class="text-start small">
+        <p class="mb-1"><i class="fa-solid fa-diagram-project me-2 text-muted"></i>{{ student.filiere.nom|default:"—" }}</p>
+        <p class="mb-1"><i class="fa-solid fa-layer-group me-2 text-muted"></i>{{ student.niveau.code|default:"—" }}</p>
+        <p class="mb-1"><i class="fa-solid fa-cake-candles me-2 text-muted"></i>{{ student.date_naissance|date:"d/m/Y"|default:"—" }} {% if student.lieu_naissance %}à {{ student.lieu_naissance }}{% endif %}</p>
+        <p class="mb-1"><i class="fa-solid fa-flag me-2 text-muted"></i>{{ student.nationalite|default:"—" }}</p>
+        <p class="mb-1"><i class="fa-solid fa-envelope me-2 text-muted"></i>{{ student.email|default:"—" }}</p>
+        <p class="mb-1"><i class="fa-solid fa-phone me-2 text-muted"></i>{{ student.telephone|default:"—" }}</p>
+        <p class="mb-0"><i class="fa-solid fa-location-dot me-2 text-muted"></i>{{ student.adresse|default:"—" }}</p>
+      </div>
+      <div class="mt-3 d-grid gap-2">
+        <a href="{% url 'core:student_edit' student.pk %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-pen me-1"></i>Modifier</a>
+        <a href="{% url 'enrollments:create' %}" class="btn btn-light btn-sm"><i class="fa-solid fa-file-signature me-1"></i>Nouvelle inscription</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Historique des inscriptions</h6>
+      </div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead class="table-light"><tr><th>Année</th><th>Filière</th><th>Niveau</th><th>Type</th><th>Statut</th></tr></thead>
+        <tbody>
+          {% for i in inscriptions %}
+          <tr><td>{{ i.annee }}</td><td class="small">{{ i.filiere.nom }}</td><td>{{ i.niveau.code }}</td>
+            <td class="small">{{ i.get_type_inscription_display }}</td>
+            <td><span class="badge bg-{% if i.statut == 'VALIDEE' %}success{% elif i.statut == 'REFUSEE' %}danger{% else %}warning{% endif %}">{{ i.get_statut_display }}</span></td></tr>
+          {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">Aucune inscription.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="card p-4">
+      <h6 class="mb-3"><i class="fa-solid fa-file-pdf me-2 text-primary"></i>Documents administratifs</h6>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <a href="{% url 'documents:generate' student.pk %}?type=ATTESTATION" class="btn btn-sm btn-outline-primary">Attestation</a>
+        <a href="{% url 'documents:generate' student.pk %}?type=CERTIFICAT" class="btn btn-sm btn-outline-primary">Certificat</a>
+        <a href="{% url 'documents:generate' student.pk %}?type=FICHE" class="btn btn-sm btn-outline-primary">Fiche d'inscription</a>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for d in documents %}
+          <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+            <span><i class="fa-regular fa-file me-2"></i>{{ d.titre }} <small class="text-muted">{{ d.created_at|date:"d/m/Y" }}</small>
+              {% if d.valide %}<span class="badge bg-success ms-1">validé</span>{% endif %}
+              {% if d.genere_par_ia %}<span class="badge bg-info ms-1">IA</span>{% endif %}</span>
+            <a href="{{ d.get_absolute_url }}" class="btn btn-sm btn-light">Ouvrir</a>
+          </li>
+        {% empty %}<li class="list-group-item px-0 text-muted">Aucun document généré.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

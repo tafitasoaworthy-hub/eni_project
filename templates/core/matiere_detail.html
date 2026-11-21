@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block page_title %}{{ matiere.nom }}{% endblock %}
+{% block content %}
+<div class="card p-4">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div><h4 class="mb-1">{{ matiere.nom }} <span class="badge badge-soft">{{ matiere.code }}</span></h4>
+      <div class="text-muted small">{{ matiere.filiere.nom }} · {{ matiere.niveau.code }} · {{ matiere.get_semestre_display }}</div></div>
+    <a href="{% url 'core:matiere_edit' matiere.pk %}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-pen me-1"></i>Modifier</a>
+  </div>
+  <div class="row g-3">
+    <div class="col-md-3"><div class="border rounded p-3 text-center"><div class="h4 mb-0">{{ matiere.credits }}</div><small class="text-muted">Crédits</small></div></div>
+    <div class="col-md-3"><div class="border rounded p-3 text-center"><div class="h4 mb-0">{{ matiere.coefficient }}</div><small class="text-muted">Coefficient</small></div></div>
+    <div class="col-md-6"><div class="border rounded p-3"><small class="text-muted">Enseignant</small><div class="fw-semibold">{{ matiere.enseignant.full_name|default:"Non affecté" }}</div></div></div>
+  </div>
+  {% if matiere.description %}<hr><p class="mb-0">{{ matiere.description }}</p>{% endif %}
+</div>
+{% endblock %}
