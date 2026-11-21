@@ -1,0 +1,4 @@
+metadata:
+  annotations:
+    cloud.google.com/backend-config: '{"default":"eni-web"}'
+    cloud.google.com/neg: '{"ingress":true}'

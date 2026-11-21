@@ -1,0 +1,48 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: eni-web
+spec:
+  timeoutSec: 65
+  healthCheck:
+    type: HTTP
+    port: 8080
+    requestPath: /healthz
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: eni-web
+spec:
+  domains:
+  - eni-fianarantsoa.com
+---
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: eni-web
+spec:
+  redirectToHttps:
+    enabled: true
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: eni-web
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: eni-web-ip
+    networking.gke.io/managed-certificates: eni-web
+    networking.gke.io/v1beta1.FrontendConfig: eni-web
+spec:
+  rules:
+  - host: eni-fianarantsoa.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 8080

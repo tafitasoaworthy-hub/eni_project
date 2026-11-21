@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eni-migrate-IMAGE_TAG
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrate
+        image: BACKEND_IMAGE
+        command: [python, manage.py, migrate, --noinput]
+        envFrom:
+        - configMapRef:
+            name: eni-runtime
+        - secretRef:
+            name: eni-runtime
+        - secretRef:
+            name: eni-postgres
+        resources:
+          requests: {cpu: 250m, memory: 512Mi}

@@ -1,0 +1,33 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eni-github-deployer
+  namespace: eni
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    resourceNames: [backend, frontend]
+    verbs: [get, list, watch, patch]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, get, list, watch]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eni-github-deployer
+  namespace: eni
+subjects:
+  - kind: User
+    apiGroup: rbac.authorization.k8s.io
+    name: eni-github-deployer@eni-universite-b9124bd9.iam.gserviceaccount.com
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: eni-github-deployer

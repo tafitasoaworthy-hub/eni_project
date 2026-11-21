@@ -1,0 +1,8 @@
+steps:
+- name: gcr.io/cloud-builders/docker
+  args: [build, -f, infra/gke/backend.Dockerfile, -t, '${_REGISTRY}/backend:${_TAG}', .]
+- name: gcr.io/cloud-builders/docker
+  args: [build, -f, infra/gke/frontend.Dockerfile, -t, '${_REGISTRY}/frontend:${_TAG}', .]
+images:
+- '${_REGISTRY}/backend:${_TAG}'
+- '${_REGISTRY}/frontend:${_TAG}'

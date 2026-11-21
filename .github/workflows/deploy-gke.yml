@@ -1,0 +1,83 @@
+name: Déployer ENI sur GKE
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: eni-production
+  cancel-in-progress: false
+
+env:
+  REGISTRY: africa-south1-docker.pkg.dev/eni-universite-b9124bd9/eni-images
+  REGISTRY_HOST: africa-south1-docker.pkg.dev
+  NAMESPACE: eni
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Construire les images du commit
+        run: |
+          docker build -f infra/gke/backend.Dockerfile -t "$REGISTRY/backend:$GITHUB_SHA" .
+          docker build -f infra/gke/frontend.Dockerfile -t "$REGISTRY/frontend:$GITHUB_SHA" .
+
+      - name: Se connecter à Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/691608346445/locations/global/workloadIdentityPools/eni-github/providers/github-actions
+          service_account: eni-github-deployer@eni-universite-b9124bd9.iam.gserviceaccount.com
+          token_format: access_token
+
+      - name: Publier les images
+        env:
+          REGISTRY_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          printf '%s' "$REGISTRY_TOKEN" | docker login -u oauth2accesstoken --password-stdin "$REGISTRY_HOST"
+          docker push "$REGISTRY/backend:$GITHUB_SHA"
+          docker push "$REGISTRY/frontend:$GITHUB_SHA"
+
+      - name: Connecter kubectl au cluster
+        uses: google-github-actions/get-gke-credentials@v3
+        with:
+          project_id: eni-universite-b9124bd9
+          cluster_name: eni
+          location: africa-south1
+
+      - name: Migrer PostgreSQL et déployer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$GITHUB_SHA" != "$latest_sha" ]]; then
+            echo "Un commit plus récent est présent sur main. Ce déploiement est ignoré."
+            exit 0
+          fi
+
+          backend_image="$REGISTRY/backend:$GITHUB_SHA"
+          frontend_image="$REGISTRY/frontend:$GITHUB_SHA"
+          migration_tag="$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          migration_job="eni-migrate-$migration_tag"
+
+          sed -e "s|BACKEND_IMAGE|$backend_image|g" -e "s|IMAGE_TAG|$migration_tag|g" infra/gke/migrate.yaml |
+            kubectl -n "$NAMESPACE" create -f -
+          if ! kubectl -n "$NAMESPACE" wait --for=condition=complete "job/$migration_job" --timeout=600s; then
+            kubectl -n "$NAMESPACE" logs "job/$migration_job" --all-containers=true --tail=100 || true
+            exit 1
+          fi
+
+          kubectl -n "$NAMESPACE" set image deployment/backend "django=$backend_image"
+          kubectl -n "$NAMESPACE" rollout status deployment/backend --timeout=600s
+          kubectl -n "$NAMESPACE" set image deployment/frontend "nginx=$frontend_image"
+          kubectl -n "$NAMESPACE" rollout status deployment/frontend --timeout=600s
+          curl --fail --silent --show-error --retry 5 --retry-all-errors --max-time 15 https://eni-fianarantsoa.com/login --output /dev/null

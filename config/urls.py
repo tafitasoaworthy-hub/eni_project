@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import HttpResponse
 from django.urls import path, include
 from django.views.generic import RedirectView
 
@@ -9,6 +10,7 @@ admin.site.site_title = "Gestion Universitaire"
 admin.site.index_title = "Tableau d'administration"
 
 urlpatterns = [
+    path("healthz/", lambda request: HttpResponse("ok", content_type="text/plain")),
     path("django-admin/", admin.site.urls),
     path("api/", include("api.urls")),
     path("", RedirectView.as_view(pattern_name="dashboard:home")),
