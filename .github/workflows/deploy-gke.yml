@@ -158,7 +158,7 @@ jobs:
           migration_job="eni-migrate-$migration_tag"
 
           sed -e "s|BACKEND_IMAGE|$backend_image|g" -e "s|IMAGE_TAG|$migration_tag|g" infra/gke/migrate.yaml |
-            kubectl -n "$NAMESPACE" create -f -
+            kubectl -n "$NAMESPACE" apply -f -
           if ! kubectl -n "$NAMESPACE" wait --for=condition=complete "job/$migration_job" --timeout=600s; then
             kubectl -n "$NAMESPACE" logs "job/$migration_job" --all-containers=true --tail=100 || true
             exit 1
