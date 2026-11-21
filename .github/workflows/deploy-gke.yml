@@ -142,6 +142,11 @@ jobs:
           cluster_name: eni
           location: africa-south1
 
+      - name: Appliquer les politiques réseau
+        run: |
+          awk 'BEGIN { RS="---"; ORS="---\n" } /kind: NetworkPolicy/ { print }' infra/gke/workloads.yaml |
+            kubectl -n "$NAMESPACE" apply -f -
+
       - name: Migrer PostgreSQL et déployer les images
         env:
           GH_TOKEN: ${{ github.token }}

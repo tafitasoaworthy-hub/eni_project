@@ -108,6 +108,8 @@ $workloads = (Get-Content -Raw infra/gke/workloads.yaml).Replace('BACKEND_IMAGE'
 $parts = $workloads -split '(?m)^---\r?\n'
 Apply-Manifest ($parts[0..1] -join "`n---`n")
 Invoke-Kube rollout status statefulset/postgres --timeout=600s
+$networkPolicies = $parts | Where-Object { $_ -match '(?m)^kind: NetworkPolicy\s*$' }
+Apply-Manifest ($networkPolicies -join "`n---`n")
 $migration = (Get-Content -Raw infra/gke/migrate.yaml).Replace('BACKEND_IMAGE', $backend).Replace('IMAGE_TAG', $tag)
 Apply-Manifest $migration
 try {
@@ -116,7 +118,8 @@ try {
     kubectl --context=$context --namespace=$namespace logs "job/eni-migrate-$tag"
     throw
 }
-Apply-Manifest ($parts[2..($parts.Count - 1)] -join "`n---`n")
+$remainingWorkloads = $parts[2..($parts.Count - 1)] | Where-Object { $_ -notmatch '(?m)^kind: NetworkPolicy\s*$' }
+Apply-Manifest ($remainingWorkloads -join "`n---`n")
 Invoke-Kube rollout status deployment/backend --timeout=600s
 Invoke-Kube rollout status deployment/frontend --timeout=600s
 Invoke-Kube get pods
