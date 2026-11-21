@@ -1,7 +1,11 @@
+#checkov:skip=CKV_K8S_14:CI replaces the image placeholder with the full commit SHA tag
+#checkov:skip=CKV_K8S_43:Checkov scans the template before CI resolves the unique commit-SHA image
+#checkov:skip=CKV_K8S_35:Django and PostgreSQL currently consume these Kubernetes Secret values through environment variables
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: eni-migrate-IMAGE_TAG
+  namespace: eni
 spec:
   backoffLimit: 2
   ttlSecondsAfterFinished: 86400
@@ -19,15 +23,17 @@ spec:
       restartPolicy: Never
       containers:
       - name: migrate
-        #checkov:skip=CKV_K8S_14:CI replaces this placeholder with the full commit SHA image tag
-        #checkov:skip=CKV_K8S_43:CI assigns the image a unique full-SHA tag; Checkov scans this template before image resolution
         image: BACKEND_IMAGE
         command: [python, manage.py, migrate, --noinput]
         securityContext:
           allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
           capabilities:
             drop:
               - ALL
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
         envFrom:
         - configMapRef:
             name: eni-runtime
@@ -37,11 +43,16 @@ spec:
             name: eni-postgres
         resources:
           requests: {cpu: 250m, memory: 512Mi}
+          limits: {cpu: 1, memory: 1Gi}
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: eni-migrations-network-policy
+  namespace: eni
 spec:
   podSelector:
     matchLabels:
