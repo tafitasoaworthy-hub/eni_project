@@ -35,6 +35,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local/ /usr/local/
 COPY --from=builder /app/ /app/
+# pip is only needed while building the image. Recent pip versions ship a
+# bundled SBOM for vendored tools that must not be included in production.
+RUN rm -rf /usr/local/lib/python3.13/site-packages/pip \
+    /usr/local/lib/python3.13/site-packages/pip-*.dist-info \
+    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.13
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/').read()"

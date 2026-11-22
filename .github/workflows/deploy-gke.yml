@@ -69,46 +69,6 @@ jobs:
           docker build -f infra/gke/backend.Dockerfile -t "$REGISTRY/backend:$GITHUB_SHA" .
           docker build -f infra/gke/frontend.Dockerfile -t "$REGISTRY/frontend:$GITHUB_SHA" .
 
-      - name: Localiser le SBOM tiers backend
-        run: |
-          docker run --rm -i --entrypoint python "$REGISTRY/backend:$GITHUB_SHA" - <<'PY'
-          from pathlib import Path
-          from importlib import metadata
-          import json
-
-          root = Path("/usr/local/lib/python3.13/site-packages")
-          targets = {"msgpack", "setuptools", "urllib3"}
-          print("Versions réellement installées :")
-          for name in sorted(targets):
-              try:
-                  print(f"  {name} {metadata.version(name)}")
-              except metadata.PackageNotFoundError:
-                  print(f"  {name}: absent")
-
-          found = 0
-          for path in root.rglob("*"):
-              if not path.is_file() or not (
-                  "sboms" in path.parts
-                  or path.name.endswith((".cdx", ".cdx.json", ".spdx", ".spdx.json"))
-              ):
-                  continue
-              try:
-                  data = json.loads(path.read_text())
-              except (UnicodeDecodeError, json.JSONDecodeError):
-                  continue
-              components = data.get("components", [])
-              if isinstance(data.get("metadata"), dict):
-                  components = [*components, data["metadata"].get("component", {})]
-              matches = [c for c in components if c.get("name", "").lower() in targets]
-              if matches:
-                  found += 1
-                  print(f"SBOM: {path.relative_to(root)}")
-                  for component in matches:
-                      print(f"  {component.get('name')} {component.get('version')}")
-          if not found:
-              print("Aucun SBOM Python ne liste msgpack, setuptools ou urllib3.")
-          PY
-
       - name: Afficher les vulnérabilités backend dans les logs
         uses: aquasecurity/trivy-action@v0.36.0
         with:
