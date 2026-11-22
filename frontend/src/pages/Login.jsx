@@ -41,7 +41,7 @@ export default function Login() {
         {error && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="label">Nom d'utilisateur</label>
+            <label className="label">Adresse e-mail ou nom d'utilisateur</label>
             <input className="input" value={username} onChange={(e) => setU(e.target.value)} autoFocus required />
           </div>
           <div>
@@ -52,11 +52,6 @@ export default function Login() {
             {loading ? <Spinner className="h-4 w-4" /> : <LogIn className="h-4 w-4" />} Se connecter
           </button>
         </form>
-        <div className="mt-6 rounded-lg bg-slate-50 p-3 text-xs text-slate-500">
-          <div className="mb-1 font-semibold text-slate-600">Comptes de démonstration</div>
-          admin / admin123 · scolarite / scolarite123<br />
-          enseignant / enseignant123 · etudiant / etudiant123
-        </div>
       </div>
     </div>
   );

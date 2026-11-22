@@ -52,7 +52,7 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env          # puis ajuster si besoin (DB, OpenAI)
 python manage.py migrate
-python manage.py seed            # données de démonstration + comptes
+python manage.py seed            # données de démonstration
 python manage.py runserver
 ```
 
@@ -64,13 +64,7 @@ npm run dev
 ```
 Puis ouvrir **http://localhost:5173**
 
-## Comptes de démonstration
-| Rôle | Identifiant | Mot de passe |
-|------|-------------|--------------|
-| Administrateur | `admin` | `admin123` |
-| Scolarité | `scolarite` | `scolarite123` |
-| Enseignant | `enseignant` | `enseignant123` |
-| Étudiant | `etudiant` | `etudiant123` |
+Les comptes se gèrent depuis l'administration Django (`/admin/`) ou l'écran de gestion des utilisateurs. Pour initialiser les comptes de l'établissement, renseigner temporairement les variables `ENI_ADMIN_PASSWORD`, `ENI_SCOLARITE_PASSWORD`, `ENI_ENSEIGNANT_PASSWORD` et `ENI_ETUDIANT_PASSWORD`, puis exécuter `python manage.py provision_eni_accounts`.
 
 ## Activer OpenAI (optionnel)
 Copier `.env.example` en `.env` et renseigner :

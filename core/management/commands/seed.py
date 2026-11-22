@@ -31,26 +31,9 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         self.stdout.write("Création des données de démonstration...")
 
-        # --- Utilisateurs de base ---
-        admin, created = User.objects.get_or_create(
-            username="admin",
-            defaults=dict(first_name="Admin", last_name="Système",
-                          email="admin@universite-eni.local", role=User.Role.ADMIN,
-                          is_staff=True, is_superuser=True),
-        )
-        if created:
-            admin.set_password("admin123"); admin.save()
-            self.stdout.write("  Admin : admin / admin123")
-
-        scol, created = User.objects.get_or_create(
-            username="scolarite",
-            defaults=dict(first_name="Agent", last_name="Scolarité",
-                          email="scolarite@universite-eni.local", role=User.Role.SCOLARITE,
-                          is_staff=True),
-        )
-        if created:
-            scol.set_password("scolarite123"); scol.save()
-            self.stdout.write("  Scolarité : scolarite / scolarite123")
+        # Do not create accounts with published default passwords in the demo seeder.
+        # A real staff account is optional for sample rows with nullable creator fields.
+        scol = User.objects.filter(role=User.Role.SCOLARITE, is_active=True).first()
 
         # --- Années universitaires ---
         a1, _ = AnneeUniversitaire.objects.get_or_create(
@@ -97,15 +80,6 @@ class Command(BaseCommand):
                               grade=random.choice([g[0] for g in Teacher.GRADES]),
                               departement=dep, email=f"ens{i}@universite-eni.local"))
             if created:
-                # compte enseignant pour le premier
-                if i == 0:
-                    u, c = User.objects.get_or_create(
-                        username="enseignant",
-                        defaults=dict(first_name=prenom, last_name=nom, role=User.Role.ENSEIGNANT))
-                    if c:
-                        u.set_password("enseignant123"); u.save()
-                        self.stdout.write("  Enseignant : enseignant / enseignant123")
-                    t.user = u; t.save()
                 t.filieres.add(*random.sample(
                     [f for f in filieres.values() if f.departement == dep] or list(filieres.values()),
                     k=min(2, len([f for f in filieres.values() if f.departement == dep]) or 1)))
@@ -154,17 +128,6 @@ class Command(BaseCommand):
                               statut=random.choice(["VALIDEE", "VALIDEE", "VALIDEE", "EN_ATTENTE"]),
                               cree_par=scol))
 
-        # compte étudiant lié au premier étudiant
-        first = Student.objects.first()
-        if first and not first.user:
-            u, c = User.objects.get_or_create(
-                username="etudiant",
-                defaults=dict(first_name=first.prenom, last_name=first.nom, role=User.Role.ETUDIANT))
-            if c:
-                u.set_password("etudiant123"); u.save()
-                self.stdout.write("  Étudiant : etudiant / etudiant123")
-            first.user = u; first.save()
-
         # --- Emplois du temps (quelques séances) ---
         jours = [1, 2, 3, 4, 5]
         creneaux = [(time(8, 0), time(10, 0)), (time(10, 0), time(12, 0)),
@@ -197,5 +160,3 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"Terminé. {created_students} étudiants créés, "
             f"{Teacher.objects.count()} enseignants, {Matiere.objects.count()} matières."))
-        self.stdout.write(self.style.SUCCESS(
-            "Comptes : admin/admin123 · scolarite/scolarite123 · enseignant/enseignant123 · etudiant/etudiant123"))
