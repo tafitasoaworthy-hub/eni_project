@@ -72,6 +72,7 @@ jobs:
       - name: Afficher les vulnérabilités backend dans les logs
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          version: v0.76.2
           image-ref: ${{ env.REGISTRY }}/backend:${{ github.sha }}
           format: table
           severity: CRITICAL,HIGH
@@ -82,6 +83,7 @@ jobs:
         if: always()
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          version: v0.76.2
           image-ref: ${{ env.REGISTRY }}/frontend:${{ github.sha }}
           format: table
           severity: CRITICAL,HIGH
@@ -92,6 +94,7 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         if: always()
         with:
+          version: v0.76.2
           image-ref: ${{ env.REGISTRY }}/backend:${{ github.sha }}
           format: sarif
           output: trivy-backend.sarif
@@ -103,6 +106,7 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         if: always()
         with:
+          version: v0.76.2
           image-ref: ${{ env.REGISTRY }}/frontend:${{ github.sha }}
           format: sarif
           output: trivy-frontend.sarif
