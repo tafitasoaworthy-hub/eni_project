@@ -3,7 +3,18 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn whitenoise
-COPY . .
+COPY manage.py ./
+COPY config/ ./config/
+COPY accounts/ ./accounts/
+COPY aiassistant/ ./aiassistant/
+COPY api/ ./api/
+COPY core/ ./core/
+COPY dashboard/ ./dashboard/
+COPY documents/ ./documents/
+COPY enrollments/ ./enrollments/
+COPY schedules/ ./schedules/
+COPY templates/ ./templates/
+COPY static/ ./static/
 RUN DJANGO_SERVE_STATIC=true python manage.py collectstatic --noinput && mkdir -p /app/media
 USER 10001:10001
 EXPOSE 8000

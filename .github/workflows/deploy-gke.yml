@@ -69,6 +69,24 @@ jobs:
           docker build -f infra/gke/backend.Dockerfile -t "$REGISTRY/backend:$GITHUB_SHA" .
           docker build -f infra/gke/frontend.Dockerfile -t "$REGISTRY/frontend:$GITHUB_SHA" .
 
+      - name: Afficher les vulnérabilités backend dans les logs
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/backend:${{ github.sha }}
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Afficher les vulnérabilités frontend dans les logs
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/frontend:${{ github.sha }}
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+
       - name: Scanner backend avec Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
