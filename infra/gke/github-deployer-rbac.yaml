@@ -11,6 +11,13 @@ rules:
   - apiGroups: [batch]
     resources: [jobs]
     verbs: [create, get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [networkpolicies]
+    resourceNames:
+      - eni-postgres-network-policy
+      - eni-backend-network-policy
+      - eni-frontend-network-policy
+    verbs: [get, patch, update]
   - apiGroups: [""]
     resources: [pods]
     verbs: [get, list]
