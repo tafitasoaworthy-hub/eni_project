@@ -2,8 +2,7 @@ param(
     [Parameter(Mandatory)][ValidatePattern('^[a-z][a-z0-9-]{4,28}[a-z0-9]$')][string]$ProjectId,
     [ValidatePattern('^[a-z]+-[a-z]+[0-9]$')][string]$Region = 'africa-south1',
     [ValidatePattern('^\d{14}$')][string]$BuiltImageTag,
-    [switch]$CreateCluster,
-    [switch]$EnableOpenAI
+    [switch]$CreateCluster
 )
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '../..')
@@ -25,13 +24,20 @@ $backend = "${registry}/backend:$tag"
 $frontend = "${registry}/frontend:$tag"
 
 Invoke-Checked gcloud projects describe $ProjectId
-Invoke-Checked gcloud services enable container.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com --project=$ProjectId
+Invoke-Checked gcloud services enable container.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com secretmanager.googleapis.com --project=$ProjectId
 $clusters = Invoke-Checked gcloud container clusters list --project=$ProjectId --filter="name=$cluster AND location=$Region" '--format=value(name)'
 if ($clusters -notcontains $cluster) {
     if (!$CreateCluster) { throw 'Relancez avec -CreateCluster pour autoriser la creation du cluster GKE facturable.' }
     Invoke-Checked gcloud container clusters create-auto $cluster --region=$Region --project=$ProjectId
 }
 Invoke-Checked gcloud container clusters get-credentials $cluster --region=$Region --project=$ProjectId
+$secretManagerEnabled = Invoke-Checked gcloud container clusters describe $cluster --location=$Region --project=$ProjectId --format='value(secretManagerConfig.enabled)'
+if ($secretManagerEnabled -ne 'True') {
+    Invoke-Checked gcloud container clusters update $cluster --location=$Region --project=$ProjectId --enable-secret-manager
+}
+$projectNumber = Invoke-Checked gcloud projects describe $ProjectId --format='value(projectNumber)'
+$secretPrincipal = "principal://iam.googleapis.com/projects/$projectNumber/locations/global/workloadIdentityPools/$ProjectId.svc.id.goog/subject/ns/$namespace/sa/eni-openai-reader"
+Invoke-Checked gcloud secrets add-iam-policy-binding eni-openai-api-key --project=$ProjectId --role=roles/secretmanager.secretAccessor --member=$secretPrincipal
 $repositories = Invoke-Checked gcloud artifacts repositories list --location=$Region --project=$ProjectId --format=json | ConvertFrom-Json
 if (!($repositories | Where-Object { $_.name -like "*/$repository" })) {
     Invoke-Checked gcloud artifacts repositories create $repository --repository-format=docker --location=$Region --project=$ProjectId
@@ -54,13 +60,6 @@ function New-SecretValue {
     [Convert]::ToBase64String($bytes)
 }
 
-function Read-OpenAIKey {
-    $secure = Read-Host 'Nouvelle cle OpenAI pour GKE' -AsSecureString
-    $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-    try { [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) }
-    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
-}
-
 function Create-SecretIfMissing {
     param([string]$Name, [scriptblock]$Values)
     $existing = Invoke-Kube get secret $Name --ignore-not-found -o name
@@ -79,17 +78,13 @@ if (!$BuiltImageTag) {
     Invoke-Checked gcloud builds submit . --project=$ProjectId --config=infra/gke/cloudbuild.yaml --substitutions="_REGISTRY=$registry,_TAG=$tag"
 }
 Apply-Manifest '{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"eni"}}'
+Apply-Manifest (Get-Content -Raw infra/gke/eni-openai-service-account.yaml)
+Apply-Manifest (Get-Content -Raw infra/gke/secret-provider-openai.yaml)
 Create-SecretIfMissing eni-postgres {
     @{ POSTGRES_DB = 'gestion_univ'; POSTGRES_USER = 'eni'; POSTGRES_PASSWORD = (New-SecretValue) }
 }
 Create-SecretIfMissing eni-runtime {
-    $values = @{ DJANGO_SECRET_KEY = (New-SecretValue) }
-    if ($EnableOpenAI) {
-        $key = Read-OpenAIKey
-        if (!$key) { throw 'Cle OpenAI vide.' }
-        $values.OPENAI_API_KEY = $key
-    }
-    $values
+    @{ DJANGO_SECRET_KEY = (New-SecretValue) }
 }
 Apply-Manifest @"
 apiVersion: v1

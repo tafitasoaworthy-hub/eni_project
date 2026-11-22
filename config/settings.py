@@ -13,6 +13,13 @@ load_dotenv(BASE_DIR / ".env")
 
 def secret_value(name, default=""):
     """Read a Kubernetes-mounted secret file, falling back to the environment."""
+    secret_file_override = os.getenv(f"{name}_FILE")
+    if secret_file_override:
+        secret_file = Path(secret_file_override)
+        if not secret_file.is_file():
+            raise RuntimeError(f"Configured secret file is not mounted: {name}")
+        return secret_file.read_text().strip()
+
     value = os.getenv(name)
     if value is not None:
         return value

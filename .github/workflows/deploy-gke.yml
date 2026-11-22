@@ -168,6 +168,9 @@ jobs:
           cluster_name: eni
           location: africa-south1
 
+      - name: Appliquer l’accès Secret Manager OpenAI
+        run: kubectl -n "$NAMESPACE" apply --server-side --field-manager=eni-github-actions -f infra/gke/secret-provider-openai.yaml
+
       - name: Appliquer les politiques réseau
         run: |
           awk 'BEGIN { RS="---"; ORS="---\n" } /kind: NetworkPolicy/ { print }' infra/gke/workloads.yaml |
@@ -195,7 +198,10 @@ jobs:
             exit 1
           fi
 
-          kubectl -n "$NAMESPACE" set image deployment/backend "django=$backend_image"
+          backend_manifest=$(awk 'BEGIN { RS="---" } /kind: Deployment/ && /name: backend/ { print }' infra/gke/workloads.yaml |
+            sed "s|BACKEND_IMAGE|$backend_image|g")
+          printf '%s\n' "$backend_manifest" |
+            kubectl -n "$NAMESPACE" apply -f -
           kubectl -n "$NAMESPACE" rollout status deployment/backend --timeout=600s
           kubectl -n "$NAMESPACE" set image deployment/frontend "nginx=$frontend_image"
           kubectl -n "$NAMESPACE" rollout status deployment/frontend --timeout=600s

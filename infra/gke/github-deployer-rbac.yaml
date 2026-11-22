@@ -19,6 +19,10 @@ rules:
       - eni-frontend-network-policy
       - eni-migrations-network-policy
     verbs: [get, patch, update]
+  - apiGroups: [secrets-store.csi.x-k8s.io]
+    resources: [secretproviderclasses]
+    resourceNames: [eni-openai-key]
+    verbs: [get, patch, update]
   - apiGroups: [""]
     resources: [pods]
     verbs: [get, list]

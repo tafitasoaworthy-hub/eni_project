@@ -28,7 +28,7 @@ kubectl -n eni port-forward service/frontend 8080:8080
 
 Ouvrez http://127.0.0.1:8080 dans Chrome et laissez la commande de tunnel active. Vérifiez le contexte avec `kubectl config current-context` avant d'exécuter des commandes manuelles.
 
-Le script construit les images, démarre PostgreSQL, exécute les migrations, puis vérifie le déploiement. Pour un projet sans cluster `eni`, ajoutez `-CreateCluster` pour autoriser sa création. Utilisez `-BuiltImageTag` pour redéployer une paire d'images ENI déjà publiée. Ajoutez `-EnableOpenAI` au premier déploiement pour saisir une nouvelle clé sans l'afficher. Les secrets sont créés une seule fois. Pour intégrer OpenAI après ce premier déploiement, faites ajouter la clé au Secret Kubernetes `eni-runtime` et redémarrez le déploiement backend.
+Le script construit les images, démarre PostgreSQL, exécute les migrations, puis vérifie le déploiement. Pour un projet sans cluster `eni`, ajoutez `-CreateCluster` pour autoriser sa création. Utilisez `-BuiltImageTag` pour redéployer une paire d'images ENI déjà publiée. La clé OpenAI est lue directement depuis Secret Manager via le module CSI GKE et Workload Identity, par le backend et par le job de migration. Aucun Secret Kubernetes ne contient la clé OpenAI. Le compte `eni-openai-reader` n'a l'accès qu'au secret `eni-openai-api-key`.
 
 La base GKE démarre vide. Pour réutiliser les données WSL, prévoyez un export et une restauration PostgreSQL distincts. Cette configuration utilise une instance PostgreSQL et un disque persistant. Pour des données réelles, planifiez des sauvegardes et leur restauration.
 

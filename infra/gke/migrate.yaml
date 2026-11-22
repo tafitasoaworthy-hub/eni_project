@@ -14,6 +14,7 @@ spec:
       labels:
         app: migrations
     spec:
+      serviceAccountName: eni-openai-reader
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
@@ -34,11 +35,17 @@ spec:
         envFrom:
         - configMapRef:
             name: eni-runtime
+        env:
+        - name: OPENAI_API_KEY_FILE
+          value: /run/secrets-manager/OPENAI_API_KEY
         volumeMounts:
           - name: tmp
             mountPath: /tmp
           - name: app-secrets
             mountPath: /run/secrets
+            readOnly: true
+          - name: openai-secret
+            mountPath: /run/secrets-manager
             readOnly: true
         resources:
           requests: {cpu: 250m, memory: 512Mi}
@@ -55,13 +62,13 @@ spec:
                 - key: DJANGO_SECRET_KEY
                   path: DJANGO_SECRET_KEY
             - secret:
-                name: eni-runtime
-                optional: true
-                items:
-                - key: OPENAI_API_KEY
-                  path: OPENAI_API_KEY
-            - secret:
                 name: eni-postgres
                 items:
                 - key: POSTGRES_PASSWORD
                   path: POSTGRES_PASSWORD
+        - name: openai-secret
+          csi:
+            driver: secrets-store-gke.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: eni-openai-key

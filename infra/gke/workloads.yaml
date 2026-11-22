@@ -160,6 +160,7 @@ spec:
       labels:
         app: backend
     spec:
+      serviceAccountName: eni-openai-reader
       securityContext:
         fsGroup: 10001
         runAsNonRoot: true
@@ -179,6 +180,9 @@ spec:
         envFrom:
         - configMapRef:
             name: eni-runtime
+        env:
+        - name: OPENAI_API_KEY_FILE
+          value: /run/secrets-manager/OPENAI_API_KEY
         ports:
         - containerPort: 8000
         readinessProbe:
@@ -208,6 +212,9 @@ spec:
         - name: app-secrets
           mountPath: /run/secrets
           readOnly: true
+        - name: openai-secret
+          mountPath: /run/secrets-manager
+          readOnly: true
       volumes:
       - name: media
         persistentVolumeClaim:
@@ -223,16 +230,16 @@ spec:
               - key: DJANGO_SECRET_KEY
                 path: DJANGO_SECRET_KEY
           - secret:
-              name: eni-runtime
-              optional: true
-              items:
-              - key: OPENAI_API_KEY
-                path: OPENAI_API_KEY
-          - secret:
               name: eni-postgres
               items:
               - key: POSTGRES_PASSWORD
                 path: POSTGRES_PASSWORD
+      - name: openai-secret
+        csi:
+          driver: secrets-store-gke.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: eni-openai-key
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -274,6 +281,19 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 100.64.0.0/10
+              - 127.0.0.0/8
+              - 169.254.0.0/16
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
