@@ -70,7 +70,7 @@ jobs:
           docker build -f infra/gke/frontend.Dockerfile -t "$REGISTRY/frontend:$GITHUB_SHA" .
 
       - name: Scanner backend avec Trivy
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/backend:${{ github.sha }}
           format: sarif
@@ -80,7 +80,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Scanner frontend avec Trivy
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/frontend:${{ github.sha }}
           format: sarif
