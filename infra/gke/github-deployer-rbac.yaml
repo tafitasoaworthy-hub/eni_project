@@ -17,6 +17,7 @@ rules:
       - eni-postgres-network-policy
       - eni-backend-network-policy
       - eni-frontend-network-policy
+      - eni-migrations-network-policy
     verbs: [get, patch, update]
   - apiGroups: [""]
     resources: [pods]

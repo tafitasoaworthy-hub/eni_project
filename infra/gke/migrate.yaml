@@ -54,6 +54,10 @@ spec:
                 items:
                 - key: DJANGO_SECRET_KEY
                   path: DJANGO_SECRET_KEY
+            - secret:
+                name: eni-runtime
+                optional: true
+                items:
                 - key: OPENAI_API_KEY
                   path: OPENAI_API_KEY
             - secret:
@@ -61,35 +65,3 @@ spec:
                 items:
                 - key: POSTGRES_PASSWORD
                   path: POSTGRES_PASSWORD
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: eni-migrations-network-policy
-  namespace: eni
-spec:
-  podSelector:
-    matchLabels:
-      app: migrations
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app: postgres
-      ports:
-        - protocol: TCP
-          port: 5432
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-          podSelector:
-            matchLabels:
-              k8s-app: kube-dns
-      ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
