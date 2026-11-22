@@ -171,7 +171,7 @@ jobs:
       - name: Appliquer les politiques réseau
         run: |
           awk 'BEGIN { RS="---"; ORS="---\n" } /kind: NetworkPolicy/ { print }' infra/gke/workloads.yaml |
-            kubectl -n "$NAMESPACE" apply -f -
+            kubectl -n "$NAMESPACE" apply --server-side --field-manager=eni-github-actions -f -
 
       - name: Migrer PostgreSQL et déployer les images
         env:
