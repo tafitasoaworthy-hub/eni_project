@@ -117,6 +117,14 @@ spec:
           port: 5432
   egress:
     - to:
+        - ipBlock:
+            cidr: 169.254.20.10/32
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: kube-system
@@ -263,6 +271,14 @@ spec:
           port: 8000
   egress:
     - to:
+        - ipBlock:
+            cidr: 169.254.20.10/32
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
         - podSelector:
             matchLabels:
               app: postgres
@@ -403,6 +419,14 @@ spec:
           port: 8080
   egress:
     - to:
+        - ipBlock:
+            cidr: 169.254.20.10/32
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
         - podSelector:
             matchLabels:
               app: backend
@@ -434,6 +458,14 @@ spec:
   policyTypes:
     - Egress
   egress:
+    - to:
+        - ipBlock:
+            cidr: 169.254.20.10/32
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
     - to:
         - podSelector:
             matchLabels:
