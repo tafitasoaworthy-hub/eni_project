@@ -1,4 +1,4 @@
-﻿# Déployer ENI sur Google Kubernetes Engine
+# Déployer ENI sur Google Kubernetes Engine
 
 Ce dossier contient les manifestes et les fichiers de construction de l'application ENI. Il utilise GKE Autopilot, Artifact Registry, Cloud Build et des disques persistants pour PostgreSQL et les fichiers déposés. L'application s'ouvre par un tunnel local Kubernetes. GKE, les builds, le registre et le stockage peuvent générer des frais.
 
@@ -29,6 +29,10 @@ kubectl -n eni port-forward service/frontend 8080:8080
 Ouvrez http://127.0.0.1:8080 dans Chrome et laissez la commande de tunnel active. Vérifiez le contexte avec `kubectl config current-context` avant d'exécuter des commandes manuelles.
 
 Le script construit les images, démarre PostgreSQL, exécute les migrations, puis vérifie le déploiement. Pour un projet sans cluster `eni`, ajoutez `-CreateCluster` pour autoriser sa création. Utilisez `-BuiltImageTag` pour redéployer une paire d'images ENI déjà publiée. La clé OpenAI est lue directement depuis Secret Manager via le module CSI GKE et Workload Identity, par le backend et par le job de migration. Aucun Secret Kubernetes ne contient la clé OpenAI. Le compte `eni-openai-reader` n'a l'accès qu'au secret `eni-openai-api-key`.
+
+## Démarrer et arrêter ENI
+
+Depuis PowerShell, utilisez `.\infra\start-eni.ps1` et `.\infra\stop-eni.ps1`. Les scripts se connectent au cluster `eni` du projet `eni-universite-b9124bd9` et ciblent le namespace `eni`. Le démarrage réapplique l'Ingress, puis démarre PostgreSQL, le backend et le frontend. L'arrêt coupe les services dans l'ordre inverse et conserve les disques persistants, les secrets et l'adresse IP réservée. `.\infra\stop-eni.ps1 -deep` supprime aussi l'Ingress pour libérer le load balancer; le démarrage le recrée. Pour simuler une action, définissez `$env:DRY_RUN = '1'` avant de lancer le script.
 
 La base GKE démarre vide. Pour réutiliser les données WSL, prévoyez un export et une restauration PostgreSQL distincts. Cette configuration utilise une instance PostgreSQL et un disque persistant. Pour des données réelles, planifiez des sauvegardes et leur restauration.
 
